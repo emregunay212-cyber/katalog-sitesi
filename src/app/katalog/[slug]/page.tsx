@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { KatalogMusteri } from "./KatalogMusteri";
 
+export const dynamic = "force-dynamic";
+
 export default async function KatalogPage({
   params,
 }: {

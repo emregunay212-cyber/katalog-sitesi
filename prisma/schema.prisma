@@ -1,0 +1,84 @@
+// Prisma schema - Katalog & Sipariş sitesi
+// SQLite (yerel) veya PostgreSQL (Supabase) - DATABASE_URL ile seçilir
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Kullanıcı: Firma sahibi veya Müşteri
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  name        String
+  role        String   @default("firma")  // "firma" | "musteri"
+  companyName String?  // Firma adı (sadece firma)
+  slug        String   @unique  // Firma linki (firma) veya müşteri için m-xxx
+  phone       String?  // Müşteri telefon (siparişte önceden doldurulur)
+  address     String?  // Müşteri adres
+  createdAt   DateTime @default(now())
+  catalogs       Catalog[]
+  orders         Order[]     @relation("FirmaOrders")   // Firma olarak aldığı siparişler
+  ordersAsCustomer Order[]    @relation("MusteriOrders") // Müşteri olarak verdiği siparişler
+}
+
+// Katalog / Kategori (firma içinde bölüm)
+model Catalog {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String        @unique
+  description String?
+  imageUrl    String?       // Kategori resmi
+  createdAt   DateTime      @default(now())
+  items       CatalogItem[]
+}
+
+// Katalogdaki ürün
+model CatalogItem {
+  id          String   @id @default(cuid())
+  catalogId   String
+  catalog     Catalog  @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Float
+  imageUrl    String?
+  orderIndex  Int       @default(0)
+  orderItems  OrderItem[]
+}
+
+// Sipariş (firmaya ait; kalemlerde hangi kategoriden olduğu catalogItem üzerinden belli)
+model Order {
+  id              String      @id @default(cuid())
+  userId          String      // Firma (siparişin sahibi)
+  user            User        @relation("FirmaOrders", fields: [userId], references: [id], onDelete: Cascade)
+  customerId      String?     // Giriş yapan müşteri (varsa)
+  customer        User?       @relation("MusteriOrders", fields: [customerId], references: [id], onDelete: SetNull)
+  customerName    String
+  customerEmail   String
+  customerPhone   String
+  customerCompany String?     // Müşterinin firma adı (varsa - siparişin nereye gideceği)
+  customerAddress String?
+  notes           String?
+  status          String      @default("pending")
+  readByOwner     Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+  items           OrderItem[]
+}
+
+// Siparişteki kalem (ürün + miktar)
+model OrderItem {
+  id            String      @id @default(cuid())
+  orderId       String
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  catalogItemId String
+  catalogItem   CatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+  quantity      Int
+  unitPrice     Float
+}

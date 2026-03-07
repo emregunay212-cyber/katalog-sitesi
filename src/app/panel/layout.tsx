@@ -18,7 +18,7 @@ export default async function PanelLayout({
   return (
     <div className="min-h-screen bg-stone-50">
       <header className="border-b border-stone-200 bg-white">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 flex flex-wrap justify-between items-center gap-2">
           <div className="flex items-center gap-4">
             <Link href="/panel" className="font-semibold text-stone-800">
               Panel
@@ -40,7 +40,7 @@ export default async function PanelLayout({
           </div>
         </div>
       </header>
-      <main className="max-w-5xl mx-auto px-4 py-6">{children}</main>
+      <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">{children}</main>
     </div>
   );
 }

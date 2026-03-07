@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -38,6 +39,7 @@ export function KatalogMusteri({ catalog, items }: Props) {
   const [priceChangeList, setPriceChangeList] = useState<{ name: string; oldPrice: number; newPrice: number }[]>([]);
   const [cartPriceBanner, setCartPriceBanner] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ role?: string } | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [form, setForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -256,10 +258,10 @@ export function KatalogMusteri({ catalog, items }: Props) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 min-h-screen flex flex-col">
+      <header className="mb-4 sm:mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-stone-800">{catalog.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-stone-800">{catalog.name}</h1>
           {catalog.description && (
             <p className="text-stone-600 mt-1">{catalog.description}</p>
           )}
@@ -293,29 +295,46 @@ export function KatalogMusteri({ catalog, items }: Props) {
         </div>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <h2 className="text-lg font-semibold text-stone-800 mb-3">Ürünler</h2>
-          <ul className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-4 sm:gap-8 lg:grid-cols-3 flex-1">
+        <div className="lg:col-span-2 lg:order-2">
+          <h2 className="text-base sm:text-lg font-semibold text-stone-800 mb-3">Ürünler</h2>
+          <ul className="grid gap-3 grid-cols-1 sm:grid-cols-2">
             {items.map((item) => (
               <li
                 key={item.id}
-                className="bg-white border border-stone-200 rounded-xl p-4 flex flex-col"
+                className="bg-white border border-stone-200 rounded-xl p-3 sm:p-4 flex flex-col"
               >
-                <h3 className="font-medium text-stone-800">{item.name}</h3>
+                {item.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setLightboxImage(item.imageUrl)}
+                    className="w-full text-left rounded-lg overflow-hidden mb-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  >
+                    <div className="relative w-full aspect-square">
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.name}
+                        fill
+                        className="object-cover rounded cursor-zoom-in"
+                        sizes="(max-width: 640px) 100vw, 240px"
+                      />
+                    </div>
+                  </button>
+                )}
+                <h3 className="font-medium text-stone-800 text-sm sm:text-base">{item.name}</h3>
                 {item.description && (
-                  <p className="text-sm text-stone-500 mt-0.5">{item.description}</p>
+                  <p className="text-sm text-stone-500 mt-0.5 line-clamp-2">{item.description}</p>
                 )}
                 <p className="text-amber-600 font-semibold mt-2">
                   {item.price.toFixed(2)} ₺
                 </p>
-                <div className="mt-auto pt-3 flex items-center gap-2">
+                <div className="mt-auto pt-3 flex items-center gap-2 flex-wrap">
                   <input
                     type="number"
                     min={1}
                     defaultValue={1}
                     id={`qty-${item.id}`}
-                    className="w-14 border border-stone-300 rounded px-2 py-1 text-sm"
+                    className="w-14 min-h-[44px] border border-stone-300 rounded-lg px-2 py-2 text-sm"
                   />
                   <button
                     type="button"
@@ -323,7 +342,7 @@ export function KatalogMusteri({ catalog, items }: Props) {
                       const el = document.getElementById(`qty-${item.id}`) as HTMLInputElement;
                       addToCart(item, parseInt(el?.value || "1", 10) || 1);
                     }}
-                    className="bg-amber-500 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-amber-600"
+                    className="bg-amber-500 text-white text-sm px-4 py-2.5 min-h-[44px] rounded-lg hover:bg-amber-600 active:bg-amber-700"
                   >
                     Sepete Ekle
                   </button>
@@ -333,8 +352,8 @@ export function KatalogMusteri({ catalog, items }: Props) {
           </ul>
         </div>
 
-        <div>
-          <div className="bg-white border border-stone-200 rounded-xl p-4 sticky top-4">
+        <div className="lg:order-1">
+          <div className="bg-white border border-stone-200 rounded-xl p-3 sm:p-4 sticky top-3 sm:top-4">
             <h2 className="text-lg font-semibold text-stone-800 mb-3">Sepet</h2>
             {cartPriceBanner && cart.length > 0 && (
               <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
@@ -366,14 +385,16 @@ export function KatalogMusteri({ catalog, items }: Props) {
                         <button
                           type="button"
                           onClick={() => updateQuantity(c.id, -1)}
-                          className="w-6 h-6 rounded border border-stone-300 hover:bg-stone-100"
+                          className="w-9 h-9 min-w-[36px] min-h-[36px] rounded border border-stone-300 hover:bg-stone-100 active:bg-stone-200"
+                          aria-label="Azalt"
                         >
                           −
                         </button>
                         <button
                           type="button"
                           onClick={() => updateQuantity(c.id, 1)}
-                          className="w-6 h-6 rounded border border-stone-300 hover:bg-stone-100"
+                          className="w-9 h-9 min-w-[36px] min-h-[36px] rounded border border-stone-300 hover:bg-stone-100 active:bg-stone-200"
+                          aria-label="Artır"
                         >
                           +
                         </button>
@@ -406,6 +427,34 @@ export function KatalogMusteri({ catalog, items }: Props) {
           </div>
         </div>
       </div>
+
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-30"
+          onClick={() => setLightboxImage(null)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Escape" && setLightboxImage(null)}
+          aria-label="Kapat"
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center text-xl hover:bg-white/30"
+            aria-label="Kapat"
+          >
+            ×
+          </button>
+          <div className="max-w-[95vw] max-h-[90vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightboxImage}
+              alt="Büyütülmüş"
+              className="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded"
+            />
+          </div>
+        </div>
+      )}
 
       {showPriceWarning && priceChangeList.length > 0 && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-20">

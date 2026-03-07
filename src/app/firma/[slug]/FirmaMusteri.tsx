@@ -44,6 +44,7 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
   const [priceChangeList, setPriceChangeList] = useState<{ name: string; oldPrice: number; newPrice: number }[]>([]);
   const [cartPriceBanner, setCartPriceBanner] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ role?: string } | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [form, setForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -254,9 +255,9 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
-      <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-stone-800">{firma.name}</h1>
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 min-h-screen flex flex-col">
+      <header className="mb-4 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-3xl font-bold text-stone-800">{firma.name}</h1>
         <div className="flex items-center gap-2">
           {loggedInUser?.role === "musteri" && (
             <Link href="/hesabim" className="text-stone-600 hover:text-stone-800 text-sm font-medium">
@@ -286,56 +287,68 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
         </div>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-8">
+      <div className="grid gap-4 sm:gap-8 lg:grid-cols-3 flex-1">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-8">
           {catalogs.map((cat) => (
             <section key={cat.id} className="bg-white border border-stone-200 rounded-xl overflow-hidden">
-              <div className="p-4 border-b border-stone-100">
+              <div className="p-3 sm:p-4 border-b border-stone-100">
                 {cat.imageUrl && (
-                  <div className="relative w-full h-32 sm:h-40 rounded-lg overflow-hidden mb-3">
-                    <Image
-                      src={cat.imageUrl}
-                      alt={cat.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, 400px"
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLightboxImage(cat.imageUrl)}
+                    className="block w-full text-left rounded-lg overflow-hidden mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  >
+                    <div className="relative w-full h-32 sm:h-40">
+                      <Image
+                        src={cat.imageUrl}
+                        alt={cat.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 400px"
+                      />
+                    </div>
+                  </button>
                 )}
-                <h2 className="text-lg font-semibold text-stone-800">{cat.name}</h2>
+                <h2 className="text-base sm:text-lg font-semibold text-stone-800">{cat.name}</h2>
                 {cat.description && (
                   <p className="text-stone-600 text-sm mt-1">{cat.description}</p>
                 )}
               </div>
-              <ul className="p-4 grid gap-3 sm:grid-cols-2">
+              <ul className="p-3 sm:p-4 grid gap-3 grid-cols-1 sm:grid-cols-2">
                 {cat.items.map((item) => (
                   <li
                     key={item.id}
                     className="border border-stone-100 rounded-lg p-3 flex flex-col"
                   >
                     {item.imageUrl && (
-                      <div className="relative w-full aspect-square rounded mb-2">
-                        <Image
-                          src={item.imageUrl}
-                          alt={item.name}
-                          fill
-                          className="object-cover rounded"
-                          sizes="160px"
-                        />
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setLightboxImage(item.imageUrl)}
+                        className="w-full text-left rounded-lg overflow-hidden mb-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      >
+                        <div className="relative w-full aspect-square">
+                          <Image
+                            src={item.imageUrl}
+                            alt={item.name}
+                            fill
+                            className="object-cover rounded cursor-zoom-in"
+                            sizes="(max-width: 640px) 100vw, 240px"
+                          />
+                        </div>
+                      </button>
                     )}
-                    <h3 className="font-medium text-stone-800">{item.name}</h3>
+                    <h3 className="font-medium text-stone-800 text-sm sm:text-base">{item.name}</h3>
                     {item.description && (
-                      <p className="text-sm text-stone-500 mt-0.5">{item.description}</p>
+                      <p className="text-sm text-stone-500 mt-0.5 line-clamp-2">{item.description}</p>
                     )}
                     <p className="text-amber-600 font-semibold mt-2">{item.price.toFixed(2)} ₺</p>
-                    <div className="mt-auto pt-2 flex items-center gap-2">
+                    <div className="mt-auto pt-2 flex items-center gap-2 flex-wrap">
                       <input
                         type="number"
                         min={1}
                         defaultValue={1}
                         id={`qty-${item.id}`}
-                        className="w-14 border border-stone-300 rounded px-2 py-1 text-sm"
+                        className="w-14 min-h-[44px] border border-stone-300 rounded-lg px-2 py-2 text-sm"
                       />
                       <button
                         type="button"
@@ -343,7 +356,7 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
                           const el = document.getElementById(`qty-${item.id}`) as HTMLInputElement;
                           addToCart(item, parseInt(el?.value || "1", 10) || 1);
                         }}
-                        className="bg-amber-500 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-amber-600"
+                        className="bg-amber-500 text-white text-sm px-4 py-2.5 min-h-[44px] rounded-lg hover:bg-amber-600 active:bg-amber-700"
                       >
                         Sepete Ekle
                       </button>
@@ -355,8 +368,8 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
           ))}
         </div>
 
-        <div>
-          <div className="bg-white border border-stone-200 rounded-xl p-4 sticky top-4">
+        <div className="lg:order-none order-first">
+          <div className="bg-white border border-stone-200 rounded-xl p-3 sm:p-4 sticky top-3 sm:top-4">
             <h2 className="text-lg font-semibold text-stone-800 mb-3">Sepet</h2>
             {cartPriceBanner && cart.length > 0 && (
               <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm">
@@ -383,12 +396,14 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
                         <button
                           type="button"
                           onClick={() => updateQuantity(c.id, -1)}
-                          className="w-6 h-6 rounded border border-stone-300 hover:bg-stone-100"
+                          className="w-9 h-9 min-w-[36px] min-h-[36px] rounded border border-stone-300 hover:bg-stone-100 active:bg-stone-200"
+                          aria-label="Azalt"
                         >−</button>
                         <button
                           type="button"
                           onClick={() => updateQuantity(c.id, 1)}
-                          className="w-6 h-6 rounded border border-stone-300 hover:bg-stone-100"
+                          className="w-9 h-9 min-w-[36px] min-h-[36px] rounded border border-stone-300 hover:bg-stone-100 active:bg-stone-200"
+                          aria-label="Artır"
                         >+</button>
                         <span className="w-16 text-right">{(c.price * c.quantity).toFixed(2)} ₺</span>
                         <button type="button" onClick={() => removeFromCart(c.id)} className="text-red-600 hover:underline">Sil</button>
@@ -450,8 +465,36 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
         </div>
       )}
 
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-30"
+          onClick={() => setLightboxImage(null)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Escape" && setLightboxImage(null)}
+          aria-label="Kapat"
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxImage(null)}
+            className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center text-xl hover:bg-white/30"
+            aria-label="Kapat"
+          >
+            ×
+          </button>
+          <div className="max-w-[95vw] max-h-[90vh] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightboxImage}
+              alt="Büyütülmüş"
+              className="max-w-full max-h-[90vh] w-auto h-auto object-contain rounded"
+            />
+          </div>
+        </div>
+      )}
+
       {showCheckout && cart.length > 0 && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-10">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-10 overflow-y-auto">
           <div className="bg-white rounded-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-stone-800 mb-4">Sipariş Bilgileri</h2>
             <p className="text-sm text-stone-500 mb-2">Üye iseniz bilgileriniz önceden dolduruldu; isterseniz değiştirebilirsiniz.</p>

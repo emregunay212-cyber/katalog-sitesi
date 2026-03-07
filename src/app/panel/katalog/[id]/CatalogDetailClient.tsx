@@ -35,20 +35,51 @@ export function CatalogDetailClient({
   const [newItemImageUrl, setNewItemImageUrl] = useState("");
   const [adding, setAdding] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const MAX_FILE_MB = 4;
+  const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function handleFileUpload(file: File, onUrl: (url: string) => void) {
+    setUploadError(null);
+    if (!file || file.size === 0) {
+      setUploadError("Dosya seçilmedi veya boş.");
+      return;
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      setUploadError(`Dosya çok büyük. En fazla ${MAX_FILE_MB}MB yükleyebilirsiniz. (Seçilen: ${(file.size / 1024 / 1024).toFixed(1)}MB)`);
+      return;
+    }
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/jpg"];
+    const type = (file.type || "").toLowerCase();
+    if (type && !allowed.includes(type) && !type.startsWith("image/")) {
+      setUploadError("Sadece JPEG, PNG, WebP veya GIF yükleyebilirsiniz.");
+      return;
+    }
     setUploading(true);
     try {
       const form = new FormData();
       form.append("file", file);
       const res = await fetch("/api/upload", { method: "POST", body: form });
-      const data = await res.json();
-      if (res.ok && data.url) onUrl(data.url);
+      let data: { url?: string; error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        setUploadError(res.status === 413 ? "Dosya çok büyük. En fazla 4MB." : "Sunucu yanıtı okunamadı. Tekrar deneyin.");
+        return;
+      }
+      if (res.ok && data.url) {
+        await onUrl(data.url);
+      } else {
+        setUploadError(data.error || "Yükleme başarısız. Dosya boyutunu küçültüp tekrar deneyin.");
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Bağlantı hatası. Tekrar deneyin.");
     } finally {
       setUploading(false);
     }
@@ -57,14 +88,19 @@ export function CatalogDetailClient({
   async function saveCatalogImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
     await handleFileUpload(file, async (url) => {
       setCatalogImage(url);
+      setUploadError(null);
       const res = await fetch(`/api/catalogs/${catalogId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: url }),
       });
-      if (res.ok) void 0;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setUploadError(data.error || "Resim kaydedilemedi. Tekrar deneyin.");
+      }
     });
   }
 
@@ -140,6 +176,18 @@ export function CatalogDetailClient({
 
   return (
     <>
+      {uploadError && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm" role="alert">
+          <strong>Resim hatası:</strong> {uploadError}
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            className="ml-2 text-red-600 underline hover:no-underline"
+          >
+            Kapat
+          </button>
+        </div>
+      )}
       <div className="bg-white border border-stone-200 rounded-xl p-5 mb-6">
         <h1 className="text-xl font-bold text-stone-800">{catalogName}</h1>
         {catalogDescription && <p className="text-stone-600 mt-1">{catalogDescription}</p>}
@@ -150,18 +198,19 @@ export function CatalogDetailClient({
               <Image src={catalogImage} alt="" fill className="object-cover" />
             </div>
           ) : null}
-          <label className="mt-2 inline-block">
+          <label className="mt-2 inline-flex items-center gap-2">
             <span className="text-sm text-amber-600 hover:underline cursor-pointer">
-              {catalogImage ? "Resmi değiştir" : "Resim yükle"}
+              {uploading ? "Yükleniyor..." : catalogImage ? "Resmi değiştir" : "Resim yükle"}
             </span>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/gif,image/*"
               className="hidden"
               disabled={uploading}
               onChange={saveCatalogImage}
             />
           </label>
+          <p className="text-xs text-stone-500 mt-1">En fazla {MAX_FILE_MB}MB, JPEG/PNG/WebP/GIF</p>
         </div>
       </div>
 
@@ -282,12 +331,13 @@ export function CatalogDetailClient({
               Resim:
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif,image/*"
                 className="hidden"
                 disabled={uploading}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file, setNewItemImageUrl);
+                  if (file) handleFileUpload(file, (url) => { setNewItemImageUrl(url); setUploadError(null); });
+                  e.target.value = "";
                 }}
               />
               <span className="ml-1 text-amber-600 hover:underline cursor-pointer">

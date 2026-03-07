@@ -42,7 +42,7 @@ function SiparisIptalForm() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-stone-50 flex flex-col items-center justify-center px-3 sm:px-4 py-6">
       <div className="w-full max-w-sm">
         <h1 className="text-xl font-bold text-stone-800 mb-2">Siparişi iptal et</h1>
         <p className="text-stone-600 text-sm mb-4">

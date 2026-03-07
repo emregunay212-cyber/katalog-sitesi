@@ -18,7 +18,7 @@ export default async function HesabimLayout({
   return (
     <div className="min-h-screen bg-stone-50">
       <header className="border-b border-stone-200 bg-white">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+        <div className="max-w-3xl mx-auto px-3 sm:px-4 py-3 flex flex-wrap justify-between items-center gap-2">
           <div className="flex items-center gap-4">
             <Link href="/hesabim" className="font-semibold text-stone-800">
               Hesabım
@@ -34,7 +34,7 @@ export default async function HesabimLayout({
           </div>
         </div>
       </header>
-      <main className="max-w-3xl mx-auto px-4 py-6">{children}</main>
+      <main className="max-w-3xl mx-auto px-3 sm:px-4 py-4 sm:py-6">{children}</main>
     </div>
   );
 }

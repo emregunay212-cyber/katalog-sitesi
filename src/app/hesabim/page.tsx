@@ -71,7 +71,7 @@ export default function HesabimPage() {
     <div className="space-y-10">
       {/* Mağazalar / Firmalar - alıcı buradan ürün alabileceği firmayı seçer */}
       <section>
-        <h1 className="text-2xl font-bold text-stone-800 mb-2">Mağazalar</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-stone-800 mb-2">Mağazalar</h1>
         <p className="text-stone-600 text-sm mb-4">
           Alışveriş yapmak için bir firmaya tıklayın; ürünleri görüp sepete ekleyerek sipariş verebilirsiniz.
         </p>
@@ -80,12 +80,12 @@ export default function HesabimPage() {
         ) : firmalar.length === 0 ? (
           <p className="text-stone-600 text-sm">Henüz mağaza bulunmuyor.</p>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid gap-3 grid-cols-1 sm:grid-cols-2">
             {firmalar.map((f) => (
               <li key={f.id}>
                 <Link
                   href={`/firma/${f.slug}`}
-                  className="block bg-white border border-stone-200 rounded-xl p-4 hover:border-amber-400 hover:shadow-sm transition"
+                  className="block bg-white border border-stone-200 rounded-xl p-4 hover:border-amber-400 hover:shadow-sm transition min-h-[44px] flex items-center"
                 >
                   <span className="font-medium text-stone-800">{f.name}</span>
                   <span className="block text-amber-600 text-sm mt-1">Ürünlere git →</span>

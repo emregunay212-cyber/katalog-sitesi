@@ -50,7 +50,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center px-3 sm:px-4 py-6">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center mb-6">Giriş Yap</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -67,7 +67,7 @@ function LoginForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-stone-300 rounded-lg px-3 py-2"
+              className="w-full border border-stone-300 rounded-lg px-3 py-2.5 min-h-[48px] text-base"
               required
             />
           </div>
@@ -79,14 +79,14 @@ function LoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-stone-300 rounded-lg px-3 py-2"
+              className="w-full border border-stone-300 rounded-lg px-3 py-2.5 min-h-[48px] text-base"
               required
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-stone-800 text-white py-2 rounded-lg hover:bg-stone-700 disabled:opacity-50"
+            className="w-full bg-stone-800 text-white py-3 min-h-[48px] rounded-lg hover:bg-stone-700 disabled:opacity-50 font-medium"
           >
             {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
           </button>

@@ -55,7 +55,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center px-3 sm:px-4 py-6">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center mb-6">Kayıt Ol</h1>
         <form onSubmit={handleSubmit} className="space-y-4">

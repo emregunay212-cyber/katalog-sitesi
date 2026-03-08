@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import * as XLSX from "xlsx";
 
 export const dynamic = "force-dynamic";
 
@@ -67,36 +68,62 @@ export async function POST(
     );
   }
 
-  if (!file.name.toLowerCase().endsWith(".csv")) {
+  const isCsv = file.name.toLowerCase().endsWith(".csv");
+  const isXlsx = file.name.toLowerCase().endsWith(".xlsx");
+  if (!isCsv && !isXlsx) {
     return NextResponse.json(
-      { error: "Sadece .csv dosyaları kabul edilir." },
+      { error: "Sadece .csv veya .xlsx dosyaları kabul edilir." },
       { status: 400 }
     );
   }
 
-  let text: string;
-  try {
-    text = await file.text();
-  } catch {
-    return NextResponse.json(
-      { error: "Dosya okunamadı. UTF-8 kodlamalı CSV kullanın." },
-      { status: 400 }
-    );
+  let headerCells: string[];
+  let dataRows: string[][];
+
+  if (isXlsx) {
+    const buf = Buffer.from(await file.arrayBuffer());
+    const wb = XLSX.read(buf, { type: "buffer" });
+    const firstSheet = wb.SheetNames[0];
+    if (!firstSheet) {
+      return NextResponse.json(
+        { error: "Excel dosyasında sayfa bulunamadı." },
+        { status: 400 }
+      );
+    }
+    const ws = wb.Sheets[firstSheet];
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1 }) as unknown[][];
+    if (!Array.isArray(aoa) || aoa.length < 2) {
+      return NextResponse.json(
+        { error: "Excel en az başlık satırı ve bir veri satırı içermelidir." },
+        { status: 400 }
+      );
+    }
+    const toStr = (c: unknown) => (c == null ? "" : String(c)).trim();
+    headerCells = (aoa[0] ?? []).map(toStr);
+    dataRows = aoa.slice(1).map((row) => (Array.isArray(row) ? row : []).map(toStr));
+  } else {
+    let text: string;
+    try {
+      text = await file.text();
+    } catch {
+      return NextResponse.json(
+        { error: "Dosya okunamadı. UTF-8 kodlamalı CSV kullanın." },
+        { status: 400 }
+      );
+    }
+    if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 2) {
+      return NextResponse.json(
+        { error: "CSV en az başlık satırı ve bir veri satırı içermelidir." },
+        { status: 400 }
+      );
+    }
+    const sep = lines[0].includes(";") ? ";" : ",";
+    headerCells = parseCsvLine(lines[0], sep);
+    dataRows = lines.slice(1).map((line) => parseCsvLine(line, sep));
   }
 
-  // Remove BOM if present
-  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
-
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  if (lines.length < 2) {
-    return NextResponse.json(
-      { error: "CSV en az başlık satırı ve bir veri satırı içermelidir." },
-      { status: 400 }
-    );
-  }
-
-  const sep = lines[0].includes(";") ? ";" : ",";
-  const headerCells = parseCsvLine(lines[0], sep);
   const colMap: { name?: number; description?: number; price?: number } = {};
   headerCells.forEach((h, i) => {
     const key = headerToKey(h);
@@ -107,7 +134,7 @@ export async function POST(
     return NextResponse.json(
       {
         error:
-          "CSV başlığında 'Ürün adı' ve 'Fiyat' sütunları olmalı. Şablonu indirip onu düzenleyin.",
+          "Başlık satırında 'Ürün adı' ve 'Fiyat' sütunları olmalı. Excel veya CSV şablonunu indirip onu düzenleyin.",
       },
       { status: 400 }
     );
@@ -116,14 +143,15 @@ export async function POST(
   const errors: string[] = [];
   const toCreate: { name: string; description: string | null; price: number }[] = [];
 
-  for (let row = 1; row < lines.length; row++) {
-    const cells = parseCsvLine(lines[row], sep);
+  for (let row = 0; row < dataRows.length; row++) {
+    const cells = dataRows[row] ?? [];
     const name = (cells[colMap.name] ?? "").trim().replace(/^"|"$/g, "");
     const description =
       colMap.description != null
         ? (cells[colMap.description] ?? "").trim().replace(/^"|"$/g, "") || null
         : null;
-    const priceStr = (cells[colMap.price] ?? "")
+    const rawPrice = cells[colMap.price] ?? "";
+    const priceStr = String(rawPrice)
       .trim()
       .replace(/^"|"$/g, "")
       .replace(/\s*₺\s*$/i, "")
@@ -131,16 +159,15 @@ export async function POST(
       .replace(",", ".");
 
     if (!name) {
-      errors.push(`Satır ${row + 1}: Ürün adı boş, atlandı.`);
+      errors.push(`Satır ${row + 2}: Ürün adı boş, atlandı.`);
       continue;
     }
     if (!priceStr) {
-      // Fiyat boşsa kategori başlığı kabul et, atla (örn. BAHÇE SULAMA)
       continue;
     }
     const price = parseFloat(priceStr);
     if (Number.isNaN(price) || price < 0) {
-      errors.push(`Satır ${row + 1}: Geçersiz fiyat "${cells[colMap.price] ?? ""}", atlandı.`);
+      errors.push(`Satır ${row + 2}: Geçersiz fiyat "${rawPrice}", atlandı.`);
       continue;
     }
     toCreate.push({ name, description, price });
@@ -149,7 +176,7 @@ export async function POST(
   if (toCreate.length === 0) {
     return NextResponse.json({
       added: 0,
-      totalRows: lines.length - 1,
+      totalRows: dataRows.length,
       errors: errors.slice(0, 20),
       message: errors.length ? "Hiçbir satır eklenemedi." : "Eklenebilir satır yok.",
     });
@@ -176,7 +203,7 @@ export async function POST(
 
   return NextResponse.json({
     added: toCreate.length,
-    totalRows: lines.length - 1,
+    totalRows: dataRows.length,
     errors: errors.slice(0, 20),
     message: `${toCreate.length} ürün eklendi. Resimleri isterseniz sonradan düzenleyerek yükleyebilirsiniz.`,
   });

@@ -408,21 +408,29 @@ export function CatalogDetailClient({
         <div className="mt-6 p-4 bg-stone-50 border border-stone-200 rounded-xl">
           <h3 className="text-sm font-semibold text-stone-700 mb-2">CSV ile toplu ürün ekle</h3>
           <p className="text-xs text-stone-500 mb-3">
-            Şablonu indirip doldurun, kaydedin (UTF-8 veya Excel ile), sonra aşağıdan yükleyin. Resim eklemeden ürün ekleyebilirsiniz; resimleri sonradan düzenleyerek yükleyebilirsiniz.
+            Excel şablonunu indirip doldurun, kaydedin; sonra aşağıdan yükleyin. CSV veya Excel kabul edilir. Resimleri sonradan düzenleyerek ekleyebilirsiniz.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <a
-              href={`/api/catalogs/${catalogId}/items/template`}
-              download="urun-sablonu.csv"
+              href={`/api/catalogs/${catalogId}/items/template/excel`}
+              download="urun-sablonu.xlsx"
               className="text-sm text-amber-600 hover:underline font-medium"
             >
-              Şablonu indir (urun-sablonu.csv)
+              Excel şablonu indir (.xlsx)
+            </a>
+            <span className="text-stone-400">|</span>
+            <a
+              href={`/api/catalogs/${catalogId}/items/template`}
+              download="urun-sablonu.csv"
+              className="text-sm text-stone-500 hover:underline"
+            >
+              CSV şablonu
             </a>
             <label className="flex items-center gap-2 text-sm">
-              <span className="text-stone-600">CSV seç:</span>
+              <span className="text-stone-600">Dosya seç (Excel veya CSV):</span>
               <input
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx"
                 className="hidden"
                 disabled={importing}
                 onChange={handleCsvImport}

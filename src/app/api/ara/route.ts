@@ -9,7 +9,6 @@ export async function GET(request: Request) {
   if (!q || q.length < 2) {
     return NextResponse.json({ results: [] });
   }
-  const term = `%${q}%`;
   const items = await prisma.catalogItem.findMany({
     where: {
       OR: [

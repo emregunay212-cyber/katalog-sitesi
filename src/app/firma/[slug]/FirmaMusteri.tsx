@@ -45,6 +45,10 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
   const [cartPriceBanner, setCartPriceBanner] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ role?: string } | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const ITEMS_PER_PAGE = 24;
+  const [visibleByCatalog, setVisibleByCatalog] = useState<Record<string, number>>({});
+  const [openCatalogId, setOpenCatalogId] = useState<string | null>(null);
   const [form, setForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -59,6 +63,12 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
       .then((r) => r.json())
       .then((data) => setLoggedInUser(data?.user ?? null))
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   useEffect(() => {
@@ -288,84 +298,121 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
       </header>
 
       <div className="grid gap-4 sm:gap-8 lg:grid-cols-3 flex-1">
-        <div className="lg:col-span-2 space-y-4 sm:space-y-8">
-          {catalogs.map((cat) => (
-            <section key={cat.id} className="bg-white border border-stone-200 rounded-xl overflow-hidden">
-              <div className="p-3 sm:p-4 border-b border-stone-100">
-                {cat.imageUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setLightboxImage(cat.imageUrl)}
-                    className="block w-full text-left rounded-lg overflow-hidden mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                  >
-                    <div className="relative w-full h-32 sm:h-40">
+        <div className="lg:col-span-2 space-y-2">
+          {catalogs.map((cat) => {
+            const isOpen = openCatalogId === cat.id;
+            const limit = visibleByCatalog[cat.id] ?? ITEMS_PER_PAGE;
+            const visibleItems = cat.items.slice(0, limit);
+            const hasMore = limit < cat.items.length;
+            return (
+              <section
+                key={cat.id}
+                className="bg-white border border-stone-200 rounded-xl overflow-hidden"
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenCatalogId((id) => (id === cat.id ? null : cat.id))}
+                  className="w-full flex items-center gap-3 p-3 sm:p-4 text-left hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-inset"
+                  aria-expanded={isOpen}
+                >
+                  {cat.imageUrl && (
+                    <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden flex-shrink-0 bg-stone-100">
                       <Image
                         src={cat.imageUrl}
-                        alt={cat.name}
+                        alt=""
                         fill
                         className="object-cover"
-                        sizes="(max-width: 640px) 100vw, 400px"
+                        sizes="56px"
                       />
                     </div>
-                  </button>
-                )}
-                <h2 className="text-base sm:text-lg font-semibold text-stone-800">{cat.name}</h2>
-                {cat.description && (
-                  <p className="text-stone-600 text-sm mt-1">{cat.description}</p>
-                )}
-              </div>
-              <ul className="p-3 sm:p-4 grid gap-3 grid-cols-1 sm:grid-cols-2">
-                {cat.items.map((item) => (
-                  <li
-                    key={item.id}
-                    className="border border-stone-100 rounded-lg p-3 flex flex-col"
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-base sm:text-lg font-semibold text-stone-800">{cat.name}</h2>
+                    {cat.description && (
+                      <p className="text-stone-500 text-sm mt-0.5 line-clamp-1">{cat.description}</p>
+                    )}
+                    <p className="text-stone-400 text-xs mt-1">{cat.items.length} ürün</p>
+                  </div>
+                  <span
+                    className={`flex-shrink-0 w-8 h-8 flex items-center justify-center text-stone-400 text-sm transition-transform ${isOpen ? "" : "-rotate-90"}`}
+                    aria-hidden
                   >
-                    {item.imageUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setLightboxImage(item.imageUrl)}
-                        className="w-full text-left rounded-lg overflow-hidden mb-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      >
-                        <div className="relative w-full aspect-square">
-                          <Image
-                            src={item.imageUrl}
-                            alt={item.name}
-                            fill
-                            className="object-cover rounded cursor-zoom-in"
-                            sizes="(max-width: 640px) 100vw, 240px"
-                          />
-                        </div>
-                      </button>
+                    ▼
+                  </span>
+                </button>
+                {isOpen && (
+                  <div className="border-t border-stone-100">
+                    <ul className="p-3 sm:p-4 grid gap-3 grid-cols-1 sm:grid-cols-2">
+                      {visibleItems.map((item) => (
+                        <li
+                          key={item.id}
+                          className="border border-stone-100 rounded-lg p-3 flex flex-col"
+                        >
+                          {item.imageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setLightboxImage(item.imageUrl)}
+                              className="w-full text-left rounded-lg overflow-hidden mb-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            >
+                              <div className="relative w-full aspect-square">
+                                <Image
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  fill
+                                  className="object-cover rounded cursor-zoom-in"
+                                  sizes="(max-width: 640px) 100vw, 240px"
+                                />
+                              </div>
+                            </button>
+                          )}
+                          <h3 className="font-medium text-stone-800 text-sm sm:text-base">{item.name}</h3>
+                          {item.description && (
+                            <p className="text-sm text-stone-500 mt-0.5 line-clamp-2">{item.description}</p>
+                          )}
+                          <p className="text-amber-600 font-semibold mt-2">{item.price.toFixed(2)} ₺</p>
+                          <div className="mt-auto pt-2 flex items-center gap-2 flex-wrap">
+                            <input
+                              type="number"
+                              min={1}
+                              defaultValue={1}
+                              id={`qty-${item.id}`}
+                              className="w-14 min-h-[44px] border border-stone-300 rounded-lg px-2 py-2 text-sm"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const el = document.getElementById(`qty-${item.id}`) as HTMLInputElement;
+                                addToCart(item, parseInt(el?.value || "1", 10) || 1);
+                              }}
+                              className="bg-amber-500 text-white text-sm px-4 py-2.5 min-h-[44px] rounded-lg hover:bg-amber-600 active:bg-amber-700"
+                            >
+                              Sepete Ekle
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    {hasMore && (
+                      <div className="px-3 sm:px-4 pb-4 flex justify-center">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setVisibleByCatalog((prev) => ({
+                              ...prev,
+                              [cat.id]: (prev[cat.id] ?? ITEMS_PER_PAGE) + ITEMS_PER_PAGE,
+                            }))
+                          }
+                          className="bg-stone-100 text-stone-700 px-5 py-2.5 rounded-lg hover:bg-stone-200 font-medium text-sm"
+                        >
+                          Daha fazla göster ({cat.items.length - limit} ürün kaldı)
+                        </button>
+                      </div>
                     )}
-                    <h3 className="font-medium text-stone-800 text-sm sm:text-base">{item.name}</h3>
-                    {item.description && (
-                      <p className="text-sm text-stone-500 mt-0.5 line-clamp-2">{item.description}</p>
-                    )}
-                    <p className="text-amber-600 font-semibold mt-2">{item.price.toFixed(2)} ₺</p>
-                    <div className="mt-auto pt-2 flex items-center gap-2 flex-wrap">
-                      <input
-                        type="number"
-                        min={1}
-                        defaultValue={1}
-                        id={`qty-${item.id}`}
-                        className="w-14 min-h-[44px] border border-stone-300 rounded-lg px-2 py-2 text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const el = document.getElementById(`qty-${item.id}`) as HTMLInputElement;
-                          addToCart(item, parseInt(el?.value || "1", 10) || 1);
-                        }}
-                        className="bg-amber-500 text-white text-sm px-4 py-2.5 min-h-[44px] rounded-lg hover:bg-amber-600 active:bg-amber-700"
-                      >
-                        Sepete Ekle
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
         </div>
 
         <div className="lg:order-none order-first">
@@ -535,6 +582,17 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
             </form>
           </div>
         </div>
+      )}
+
+      {showBackToTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-20 bg-stone-700 text-white rounded-full p-3 shadow-lg hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          aria-label="Yukarı çık"
+        >
+          ↑
+        </button>
       )}
     </div>
   );

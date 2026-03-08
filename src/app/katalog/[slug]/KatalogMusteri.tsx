@@ -40,6 +40,11 @@ export function KatalogMusteri({ catalog, items }: Props) {
   const [cartPriceBanner, setCartPriceBanner] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ role?: string } | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const ITEMS_PER_PAGE = 24;
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const visibleItems = items.slice(0, visibleCount);
+  const hasMore = visibleCount < items.length;
   const [form, setForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -104,6 +109,12 @@ export function KatalogMusteri({ catalog, items }: Props) {
       window.removeEventListener("focus", onFocus);
     };
   }, [cart.length, catalog.slug, checkCartPrices]);
+
+  useEffect(() => {
+    const onScroll = () => setShowBackToTop(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   function addToCart(item: Item, qty: number = 1) {
     const existing = cart.find((c) => c.id === item.id);
@@ -299,7 +310,7 @@ export function KatalogMusteri({ catalog, items }: Props) {
         <div className="lg:col-span-2 lg:order-2">
           <h2 className="text-base sm:text-lg font-semibold text-stone-800 mb-3">Ürünler</h2>
           <ul className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-            {items.map((item) => (
+            {visibleItems.map((item) => (
               <li
                 key={item.id}
                 className="bg-white border border-stone-200 rounded-xl p-3 sm:p-4 flex flex-col"
@@ -350,6 +361,17 @@ export function KatalogMusteri({ catalog, items }: Props) {
               </li>
             ))}
           </ul>
+          {hasMore && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setVisibleCount((n) => Math.min(n + ITEMS_PER_PAGE, items.length))}
+                className="bg-stone-100 text-stone-700 px-5 py-2.5 rounded-lg hover:bg-stone-200 font-medium text-sm"
+              >
+                Daha fazla göster ({items.length - visibleCount} ürün kaldı)
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="lg:order-1">
@@ -598,6 +620,17 @@ export function KatalogMusteri({ catalog, items }: Props) {
             </form>
           </div>
         </div>
+      )}
+
+      {showBackToTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-20 bg-stone-700 text-white rounded-full p-3 shadow-lg hover:bg-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          aria-label="Yukarı çık"
+        >
+          ↑
+        </button>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Header } from "@/components/Header";
 
 export const metadata: Metadata = {
   title: "Katalog & Sipariş",
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body className="min-h-screen bg-stone-50 text-stone-900 antialiased">
+        <Header />
         {children}
       </body>
     </html>

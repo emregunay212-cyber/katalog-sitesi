@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 type CatalogItem = {
   id: string;
@@ -27,6 +28,7 @@ export function CatalogDetailClient({
   catalogImageUrl,
   initialItems,
 }: Props) {
+  const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [catalogImage, setCatalogImage] = useState(catalogImageUrl);
   const [newItemName, setNewItemName] = useState("");
@@ -37,6 +39,17 @@ export function CatalogDetailClient({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    added: number;
+    totalRows: number;
+    errors: string[];
+    message: string;
+  } | null>(null);
+
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
 
   const MAX_FILE_MB = 4;
   const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
@@ -171,6 +184,41 @@ export function CatalogDetailClient({
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleCsvImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImportResult(null);
+    setImporting(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`/api/catalogs/${catalogId}/items/import`, {
+        method: "POST",
+        body: form,
+      });
+      const data = await res.json();
+      setImportResult({
+        added: data.added ?? 0,
+        totalRows: data.totalRows ?? 0,
+        errors: Array.isArray(data.errors) ? data.errors : [],
+        message: data.message || (res.ok ? "İşlem tamamlandı." : data.error || "Hata oluştu."),
+      });
+      if (res.ok && data.added > 0) {
+        router.refresh();
+      }
+    } catch {
+      setImportResult({
+        added: 0,
+        totalRows: 0,
+        errors: [],
+        message: "Bağlantı hatası. Tekrar deneyin.",
+      });
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -356,6 +404,53 @@ export function CatalogDetailClient({
             {adding ? "Ekleniyor..." : "Ürün Ekle"}
           </button>
         </form>
+
+        <div className="mt-6 p-4 bg-stone-50 border border-stone-200 rounded-xl">
+          <h3 className="text-sm font-semibold text-stone-700 mb-2">CSV ile toplu ürün ekle</h3>
+          <p className="text-xs text-stone-500 mb-3">
+            Şablonu indirip doldurun, kaydedin (UTF-8 veya Excel ile), sonra aşağıdan yükleyin. Resim eklemeden ürün ekleyebilirsiniz; resimleri sonradan düzenleyerek yükleyebilirsiniz.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={`/api/catalogs/${catalogId}/items/template`}
+              download="urun-sablonu.csv"
+              className="text-sm text-amber-600 hover:underline font-medium"
+            >
+              Şablonu indir (urun-sablonu.csv)
+            </a>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-stone-600">CSV seç:</span>
+              <input
+                type="file"
+                accept=".csv"
+                className="hidden"
+                disabled={importing}
+                onChange={handleCsvImport}
+              />
+              <span className="bg-white border border-stone-300 rounded-lg px-3 py-2 text-amber-600 hover:bg-amber-50 cursor-pointer">
+                {importing ? "Yükleniyor..." : "Dosya seç"}
+              </span>
+            </label>
+          </div>
+          {importResult && (
+            <div
+              className={`mt-3 p-3 rounded-lg text-sm ${importResult.added > 0 ? "bg-green-50 text-green-800 border border-green-200" : "bg-amber-50 text-amber-800 border border-amber-200"}`}
+              role="alert"
+            >
+              <p className="font-medium">{importResult.message}</p>
+              {importResult.added > 0 && (
+                <p className="mt-1">{importResult.added} ürün eklendi.</p>
+              )}
+              {importResult.errors.length > 0 && (
+                <ul className="mt-2 list-disc list-inside text-xs">
+                  {importResult.errors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
       </section>
     </>
   );

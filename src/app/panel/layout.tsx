@@ -23,6 +23,9 @@ export default async function PanelLayout({
             <Link href="/panel" className="font-semibold text-stone-800">
               Panel
             </Link>
+            <Link href="/panel/firma" className="text-stone-600 hover:text-stone-900 text-sm">
+              Firmamı düzenle
+            </Link>
             <Link href="/panel/siparisler" className="text-stone-600 hover:text-stone-900 text-sm">
               Siparişler
             </Link>

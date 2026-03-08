@@ -29,7 +29,10 @@ export default async function PanelPage() {
     <div>
       {firmaSlug && (
         <div className="mb-4 bg-white border border-stone-200 rounded-xl p-4">
-          <p className="text-sm font-medium text-stone-700">Firma linki (müşteriye bu linki atın — tüm ürünleriniz görünür)</p>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <p className="text-sm font-medium text-stone-700">Firma linki (müşteriye bu linki atın — tüm ürünleriniz görünür)</p>
+            <Link href="/panel/firma" className="text-sm text-amber-600 hover:underline font-medium">Firmamı düzenle</Link>
+          </div>
           <FirmaLinkCopy url={`${baseUrl}/firma/${firmaSlug}`} />
         </div>
       )}

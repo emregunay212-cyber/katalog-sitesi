@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import Link from "next/link";
-import { logout } from "@/app/actions";
 
 export default async function PanelLayout({
   children,
@@ -17,32 +16,19 @@ export default async function PanelLayout({
   }
   return (
     <div className="min-h-screen bg-stone-50">
-      <header className="border-b border-stone-200 bg-white">
-        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 flex flex-wrap justify-between items-center gap-2">
-          <div className="flex items-center gap-4">
-            <Link href="/panel" className="font-semibold text-stone-800">
-              Panel
-            </Link>
-            <Link href="/panel/firma" className="text-stone-600 hover:text-stone-900 text-sm">
-              Firmamı düzenle
-            </Link>
-            <Link href="/panel/siparisler" className="text-stone-600 hover:text-stone-900 text-sm">
-              Siparişler
-            </Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-stone-600">{user.name}</span>
-            <form action={logout}>
-              <button
-                type="submit"
-                className="text-sm text-stone-500 hover:text-stone-800"
-              >
-                Çıkış
-              </button>
-            </form>
-          </div>
+      <nav className="border-b border-stone-100 bg-stone-50">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2 flex items-center gap-4">
+          <Link href="/panel" className="text-sm font-medium text-stone-700 hover:text-stone-900">
+            Kataloglar
+          </Link>
+          <Link href="/panel/firma" className="text-sm text-stone-500 hover:text-stone-900">
+            Firmamı düzenle
+          </Link>
+          <Link href="/panel/siparisler" className="text-sm text-stone-500 hover:text-stone-900">
+            Siparişler
+          </Link>
         </div>
-      </header>
+      </nav>
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">{children}</main>
     </div>
   );

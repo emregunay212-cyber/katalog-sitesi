@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-type Firma = { id: string; slug: string; name: string };
-
 type OrderRow = {
   id: string;
   status: string;
@@ -17,18 +15,9 @@ type OrderRow = {
 };
 
 export default function HesabimPage() {
-  const [firmalar, setFirmalar] = useState<Firma[]>([]);
   const [orders, setOrders] = useState<OrderRow[]>([]);
-  const [loadingFirmalar, setLoadingFirmalar] = useState(true);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/firmalar")
-      .then((r) => r.json())
-      .then((data) => setFirmalar(data.firmalar || []))
-      .finally(() => setLoadingFirmalar(false));
-  }, []);
 
   useEffect(() => {
     fetch("/api/me/siparisler")
@@ -68,42 +57,13 @@ export default function HesabimPage() {
   }
 
   return (
-    <div className="space-y-10">
-      {/* Mağazalar / Firmalar - alıcı buradan ürün alabileceği firmayı seçer */}
-      <section>
-        <h1 className="text-xl sm:text-2xl font-bold text-stone-800 mb-2">Mağazalar</h1>
-        <p className="text-stone-600 text-sm mb-4">
-          Alışveriş yapmak için bir firmaya tıklayın; ürünleri görüp sepete ekleyerek sipariş verebilirsiniz.
-        </p>
-        {loadingFirmalar ? (
-          <p className="text-stone-500 text-sm">Firmalar yükleniyor...</p>
-        ) : firmalar.length === 0 ? (
-          <p className="text-stone-600 text-sm">Henüz mağaza bulunmuyor.</p>
-        ) : (
-          <ul className="grid gap-3 grid-cols-1 sm:grid-cols-2">
-            {firmalar.map((f) => (
-              <li key={f.id}>
-                <Link
-                  href={`/firma/${f.slug}`}
-                  className="block bg-white border border-stone-200 rounded-xl p-4 hover:border-amber-400 hover:shadow-sm transition min-h-[44px] flex items-center"
-                >
-                  <span className="font-medium text-stone-800">{f.name}</span>
-                  <span className="block text-amber-600 text-sm mt-1">Ürünlere git →</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Siparişlerim */}
-      <section>
-        <h2 className="text-xl font-bold text-stone-800 mb-4">Siparişlerim</h2>
-        {loadingOrders ? (
-          <p className="text-stone-500 text-sm">Siparişleriniz yükleniyor...</p>
-        ) : orders.length === 0 ? (
-          <p className="text-stone-600 text-sm">Henüz siparişiniz yok.</p>
-        ) : (
+    <div>
+      <h1 className="text-xl font-bold text-stone-800 mb-4">Siparişlerim</h1>
+      {loadingOrders ? (
+        <p className="text-stone-500 text-sm">Siparişleriniz yükleniyor...</p>
+      ) : orders.length === 0 ? (
+        <p className="text-stone-600 text-sm">Henüz siparişiniz yok.</p>
+      ) : (
         <ul className="space-y-4">
           {orders.map((o) => (
             <li
@@ -152,12 +112,11 @@ export default function HesabimPage() {
             </li>
           ))}
         </ul>
-        )}
-      </section>
+      )}
 
-      <p className="pt-4 text-sm text-stone-500">
+      <p className="pt-6 text-sm text-stone-500">
         <Link href="/" className="text-amber-600 hover:underline">
-          ← Ana sayfaya dön
+          ← Mağazalara dön
         </Link>
       </p>
     </div>

@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   const items = await prisma.catalogItem.findMany({
     where,
     include: {
-      catalog: { select: { name: true, slug: true } },
+      catalog: { select: { id: true, name: true, slug: true } },
     },
     orderBy: { name: "asc" },
     take: 50,
@@ -42,7 +42,12 @@ export async function GET(request: Request) {
     description: item.description,
     price: item.price,
     imageUrl: item.imageUrl,
-    catalog: item.catalog,
+    catalog: { name: item.catalog.name, slug: item.catalog.slug },
   }));
-  return NextResponse.json({ results, catalogs });
+
+  // Sonuçlarda var olan kategorileri filtrele
+  const catalogIdsInResults = new Set(items.map((item) => item.catalog.id));
+  const filteredCatalogs = catalogs.filter((cat) => catalogIdsInResults.has(cat.id));
+
+  return NextResponse.json({ results, catalogs: filteredCatalogs });
 }

@@ -113,32 +113,35 @@ export default function AraPage() {
 
         {/* Kategori Filtresi */}
         {catalogs.length > 0 && (
-          <div className="mb-6 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => handleCatalogChange("")}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
-                selectedCatalog === ""
-                  ? "bg-amber-500 text-white border-amber-500"
-                  : "bg-white text-stone-600 border-stone-300 hover:border-amber-400"
-              }`}
-            >
-              Tümü
-            </button>
-            {catalogs.map((c) => (
+          <div className="mb-8">
+            <h2 className="text-sm font-semibold text-stone-700 mb-3">Kategorilere göre filtrele:</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
               <button
-                key={c.id}
                 type="button"
-                onClick={() => handleCatalogChange(c.id)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
-                  selectedCatalog === c.id
+                onClick={() => handleCatalogChange("")}
+                className={`px-3 py-2 rounded-lg text-sm font-medium border transition ${
+                  selectedCatalog === ""
                     ? "bg-amber-500 text-white border-amber-500"
-                    : "bg-white text-stone-600 border-stone-300 hover:border-amber-400"
+                    : "bg-white text-stone-600 border-stone-300 hover:border-amber-400 hover:bg-amber-50"
                 }`}
               >
-                {c.name}
+                Tümü
               </button>
-            ))}
+              {catalogs.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => handleCatalogChange(c.id)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition ${
+                    selectedCatalog === c.id
+                      ? "bg-amber-500 text-white border-amber-500"
+                      : "bg-white text-stone-600 border-stone-300 hover:border-amber-400 hover:bg-amber-50"
+                  }`}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

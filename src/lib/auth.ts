@@ -15,6 +15,7 @@ export type SessionUser = {
   slug?: string;
   role?: string;
   companyName?: string | null;
+  logoUrl?: string | null;
   phone?: string;
   address?: string;
 };
@@ -81,7 +82,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const user = await prisma.user.findUnique({
     where: { id: session.id },
   });
-  const u = user as { id: string; email: string; name: string; slug: string; role?: string; companyName?: string | null; phone?: string | null; address?: string | null };
+  const u = user as { id: string; email: string; name: string; slug: string; role?: string; companyName?: string | null; logoUrl?: string | null; phone?: string | null; address?: string | null };
   return user
     ? {
         id: u.id,
@@ -90,6 +91,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
         slug: u.slug,
         role: u.role,
         companyName: u.companyName ?? undefined,
+        logoUrl: u.logoUrl ?? null,
         phone: u.phone ?? undefined,
         address: u.address ?? undefined,
       }

@@ -16,15 +16,44 @@ export async function PUT(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
   }
-  if (user.role !== "firma") {
-    return NextResponse.json({ error: "Sadece firma hesabı düzenlenebilir." }, { status: 403 });
-  }
   let body: { companyName?: string; name?: string; slug?: string; phone?: string; address?: string; logoUrl?: string | null; email?: string; currentPassword?: string; newPassword?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
   }
+
+  // Müşteri: sadece ad, telefon, adres güncellenebilir
+  if (user.role === "musteri") {
+    const musteriUpdates: { name?: string; phone?: string | null; address?: string | null } = {};
+    if (body.name !== undefined) {
+      const n = body.name?.trim();
+      if (!n) return NextResponse.json({ error: "Ad soyad boş olamaz." }, { status: 400 });
+      musteriUpdates.name = n;
+    }
+    if (body.phone !== undefined) musteriUpdates.phone = body.phone?.trim() || null;
+    if (body.address !== undefined) musteriUpdates.address = body.address?.trim() || null;
+    if (Object.keys(musteriUpdates).length === 0) {
+      return NextResponse.json({ error: "Güncellenecek alan yok." }, { status: 400 });
+    }
+    const updated = await prisma.user.update({ where: { id: user.id }, data: musteriUpdates });
+    return NextResponse.json({
+      user: {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        role: updated.role,
+        phone: (updated as unknown as { phone?: string | null }).phone ?? undefined,
+        address: (updated as unknown as { address?: string | null }).address ?? undefined,
+      },
+    });
+  }
+
+  // Firma değilse erişim yok
+  if (user.role !== "firma") {
+    return NextResponse.json({ error: "Bu işlem için yetkiniz yok." }, { status: 403 });
+  }
+
   const updates: { companyName?: string | null; name?: string; slug?: string; phone?: string | null; address?: string | null; logoUrl?: string | null; email?: string; password?: string } = {};
   if (body.companyName !== undefined) updates.companyName = body.companyName?.trim() || null;
   if (body.name !== undefined) {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { BilgilerimForm } from "./BilgilerimForm";
 
 type OrderRow = {
   id: string;
@@ -57,64 +58,70 @@ export default function HesabimPage() {
   }
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-stone-800 mb-4">Siparişlerim</h1>
-      {loadingOrders ? (
-        <p className="text-stone-500 text-sm">Siparişleriniz yükleniyor...</p>
-      ) : orders.length === 0 ? (
-        <p className="text-stone-600 text-sm">Henüz siparişiniz yok.</p>
-      ) : (
-        <ul className="space-y-4">
-          {orders.map((o) => (
-            <li
-              key={o.id}
-              className="bg-white border border-stone-200 rounded-xl p-4"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <span className="font-mono text-sm text-stone-500">{o.id}</span>
-                <span
-                  className={`text-sm font-medium ${
-                    o.status === "pending"
-                      ? "text-amber-600"
-                      : o.status === "completed"
-                        ? "text-green-600"
-                        : "text-stone-500"
-                  }`}
-                >
-                  {statusLabel(o.status)}
-                </span>
-              </div>
-              <p className="text-stone-600 text-sm mb-1">
-                {o.firmaName} • {new Date(o.createdAt).toLocaleDateString("tr-TR")}
-              </p>
-              <p className="font-semibold text-stone-800">
-                Toplam: {o.total.toFixed(2)} ₺
-              </p>
-              <ul className="mt-2 text-sm text-stone-600 list-disc list-inside">
-                {o.items.map((i, idx) => (
-                  <li key={idx}>
-                    {i.name} × {i.quantity} — {(i.unitPrice * i.quantity).toFixed(2)} ₺
-                  </li>
-                ))}
-              </ul>
-              {o.status === "pending" && (
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={() => handleIptal(o.id)}
-                    disabled={cancellingId === o.id}
-                    className="text-red-600 hover:underline text-sm font-medium disabled:opacity-50"
-                  >
-                    {cancellingId === o.id ? "İptal ediliyor..." : "Siparişi iptal et"}
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="space-y-8">
+      {/* Bilgi güncelleme formu */}
+      <BilgilerimForm />
 
-      <p className="pt-6 text-sm text-stone-500">
+      {/* Siparişler */}
+      <div>
+        <h1 className="text-xl font-bold text-stone-800 mb-4">Siparişlerim</h1>
+        {loadingOrders ? (
+          <p className="text-stone-500 text-sm">Siparişleriniz yükleniyor...</p>
+        ) : orders.length === 0 ? (
+          <p className="text-stone-600 text-sm">Henüz siparişiniz yok.</p>
+        ) : (
+          <ul className="space-y-4">
+            {orders.map((o) => (
+              <li
+                key={o.id}
+                className="bg-white border border-stone-200 rounded-xl p-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <span className="font-mono text-sm text-stone-500">{o.id}</span>
+                  <span
+                    className={`text-sm font-medium ${
+                      o.status === "pending"
+                        ? "text-amber-600"
+                        : o.status === "completed"
+                          ? "text-green-600"
+                          : "text-stone-500"
+                    }`}
+                  >
+                    {statusLabel(o.status)}
+                  </span>
+                </div>
+                <p className="text-stone-600 text-sm mb-1">
+                  {o.firmaName} • {new Date(o.createdAt).toLocaleDateString("tr-TR")}
+                </p>
+                <p className="font-semibold text-stone-800">
+                  Toplam: {o.total.toFixed(2)} ₺
+                </p>
+                <ul className="mt-2 text-sm text-stone-600 list-disc list-inside">
+                  {o.items.map((i, idx) => (
+                    <li key={idx}>
+                      {i.name} × {i.quantity} — {(i.unitPrice * i.quantity).toFixed(2)} ₺
+                    </li>
+                  ))}
+                </ul>
+                {o.status === "pending" && (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() => handleIptal(o.id)}
+                      disabled={cancellingId === o.id}
+                      className="text-red-600 hover:underline text-sm font-medium disabled:opacity-50"
+                    >
+                      {cancellingId === o.id ? "İptal ediliyor..." : "Siparişi iptal et"}
+                    </button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <p className="text-sm text-stone-500">
         <Link href="/" className="text-amber-600 hover:underline">
           ← Mağazalara dön
         </Link>

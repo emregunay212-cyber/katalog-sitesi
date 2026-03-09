@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
+import { SearchBox } from "./SearchBox";
 
 export async function Header() {
   const user = await getCurrentUser();
@@ -13,14 +14,7 @@ export async function Header() {
           >
             Katalog & Sipariş
           </Link>
-          <form action="/ara" method="get" className="flex-1 min-w-0 max-w-xs sm:max-w-sm">
-            <input
-              type="search"
-              name="q"
-              placeholder="Ürün ara..."
-              className="w-full min-h-[36px] sm:min-h-[40px] border border-stone-300 rounded-lg px-3 py-1.5 text-sm"
-            />
-          </form>
+          <SearchBox />
         </div>
         <nav className="flex items-center gap-1 sm:gap-2 shrink-0">
           <Link

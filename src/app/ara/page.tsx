@@ -12,6 +12,7 @@ type SearchResult = {
   price: number;
   imageUrl: string | null;
   catalog: { name: string; slug: string };
+  firm: { name: string; logoUrl: string | null };
 };
 
 type CatalogOption = { id: string; name: string };
@@ -191,7 +192,17 @@ export default function AraPage() {
                           <p className="text-sm text-stone-500 line-clamp-2 mt-0.5">{item.description}</p>
                         )}
                         <p className="text-amber-600 font-semibold mt-1">{item.price.toFixed(2)} ₺</p>
-                        <p className="text-xs text-stone-400 mt-1">Kategori: {item.catalog.name}</p>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-stone-100">
+                          <p className="text-xs text-stone-400">Kategori: {item.catalog.name}</p>
+                          <div className="flex items-center gap-1">
+                            {item.firm.logoUrl && (
+                              <div className="relative w-4 h-4 flex-shrink-0 rounded overflow-hidden bg-stone-100">
+                                <Image src={item.firm.logoUrl} alt="" fill className="object-cover" sizes="16px" />
+                              </div>
+                            )}
+                            <span className="text-xs text-stone-600 font-medium">{item.firm.name}</span>
+                          </div>
+                        </div>
                       </div>
                     </Link>
                   </li>

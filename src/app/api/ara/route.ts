@@ -32,6 +32,7 @@ export async function GET(request: Request) {
     where,
     include: {
       catalog: { select: { id: true, name: true, slug: true } },
+      user: { select: { name: true, logoUrl: true } },
     },
     orderBy: { name: "asc" },
     take: 50,
@@ -43,6 +44,7 @@ export async function GET(request: Request) {
     price: item.price,
     imageUrl: item.imageUrl,
     catalog: { name: item.catalog.name, slug: item.catalog.slug },
+    firm: { name: item.user.name, logoUrl: item.user.logoUrl },
   }));
 
   // Sonuçlarda var olan kategorileri filtrele

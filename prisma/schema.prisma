@@ -19,6 +19,7 @@ model User {
   role        String   @default("firma")  // "firma" | "musteri"
   companyName String?  // Firma adı (sadece firma)
   slug        String   @unique  // Firma linki (firma) veya müşteri için m-xxx
+  logoUrl     String?  // Firma logosu
   phone       String?  // Müşteri telefon (siparişte önceden doldurulur)
   address     String?  // Müşteri adres
   createdAt   DateTime @default(now())

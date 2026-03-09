@@ -22,7 +22,7 @@ type Catalog = {
   items: Item[];
 };
 
-type Firma = { id: string; name: string; slug: string };
+type Firma = { id: string; name: string; slug: string; logoUrl: string | null };
 
 type Props = {
   firma: Firma;
@@ -172,7 +172,14 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4 sm:py-6 min-h-screen flex flex-col">
       <header className="mb-4 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-3xl font-bold text-stone-800">{firma.name}</h1>
+        <div className="flex items-center gap-3">
+          {firma.logoUrl && (
+            <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 rounded-xl overflow-hidden border border-stone-200 bg-white">
+              <Image src={firma.logoUrl} alt="" fill className="object-contain p-1" sizes="64px" />
+            </div>
+          )}
+          <h1 className="text-xl sm:text-3xl font-bold text-stone-800">{firma.name}</h1>
+        </div>
         <div className="flex items-center gap-2">
           {loggedInUser?.role === "musteri" && (
             <Link href="/hesabim" className="text-stone-600 hover:text-stone-800 text-sm font-medium">

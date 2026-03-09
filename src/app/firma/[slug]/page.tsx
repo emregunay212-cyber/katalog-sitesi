@@ -25,7 +25,7 @@ export default async function FirmaPage({
   return (
     <div className="min-h-screen bg-stone-50">
       <FirmaMusteri
-        firma={{ id: user.id, name: firmaDisplayName, slug: user.slug }}
+        firma={{ id: user.id, name: firmaDisplayName, slug: user.slug, logoUrl: user.logoUrl ?? null }}
         catalogs={user.catalogs.map((c) => ({
           id: c.id,
           name: c.name,

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { logout } from "@/app/actions";
 import Link from "next/link";
 
 export default async function PanelLayout({
@@ -27,6 +28,11 @@ export default async function PanelLayout({
           <Link href="/panel/siparisler" className="text-sm text-stone-500 hover:text-stone-900">
             Siparişler
           </Link>
+          <form action={logout} className="ml-auto">
+            <button type="submit" className="text-sm text-red-500 hover:text-red-700">
+              Çıkış yap
+            </button>
+          </form>
         </div>
       </nav>
       <main className="max-w-5xl mx-auto px-3 sm:px-4 py-4 sm:py-6">{children}</main>

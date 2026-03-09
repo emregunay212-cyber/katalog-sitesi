@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export default async function Home() {
       name: true,
       companyName: true,
       slug: true,
+      logoUrl: true,
       _count: { select: { catalogs: true } },
     },
     orderBy: { name: "asc" },
@@ -22,6 +24,7 @@ export default async function Home() {
       id: f.id,
       slug: f.slug,
       name: f.companyName || f.name,
+      logoUrl: f.logoUrl,
     }));
 
   return (
@@ -63,8 +66,15 @@ export default async function Home() {
                     href={`/firma/${f.slug}`}
                     className="block bg-white border border-stone-200 rounded-xl p-4 hover:border-amber-400 hover:shadow-sm transition"
                   >
-                    <span className="font-medium text-stone-800">{f.name}</span>
-                    <span className="block text-amber-600 text-sm mt-1">Ürünlere git →</span>
+                    <div className="flex items-center gap-3 mb-2">
+                      {f.logoUrl && (
+                        <div className="relative w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden bg-stone-50 border border-stone-200">
+                          <Image src={f.logoUrl} alt="" fill className="object-contain p-1" sizes="40px" />
+                        </div>
+                      )}
+                      <span className="font-medium text-stone-800">{f.name}</span>
+                    </div>
+                    <span className="block text-amber-600 text-sm">Ürünlere git →</span>
                   </Link>
                 </li>
               ))}

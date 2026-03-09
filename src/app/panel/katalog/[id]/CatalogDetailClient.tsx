@@ -40,6 +40,12 @@ export function CatalogDetailClient({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [editingCatalog, setEditingCatalog] = useState(false);
+  const [catName, setCatName] = useState(catalogName);
+  const [catDesc, setCatDesc] = useState(catalogDescription || "");
+  const [catSaving, setCatSaving] = useState(false);
+  const [catSuccess, setCatSuccess] = useState("");
+  const [catError, setCatError] = useState("");
   const [importResult, setImportResult] = useState<{
     added: number;
     totalRows: number;
@@ -115,6 +121,28 @@ export function CatalogDetailClient({
         setUploadError(data.error || "Resim kaydedilemedi. Tekrar deneyin.");
       }
     });
+  }
+
+  async function saveCatalogInfo() {
+    if (!catName.trim()) { setCatError("Kategori adı boş olamaz."); return; }
+    setCatSaving(true); setCatError(""); setCatSuccess("");
+    try {
+      const res = await fetch(`/api/catalogs/${catalogId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: catName.trim(), description: catDesc.trim() || null }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCatSuccess("Kategori bilgileri güncellendi.");
+        setTimeout(() => setCatSuccess(""), 4000);
+        setEditingCatalog(false);
+        router.refresh();
+      } else {
+        setCatError(data.error || "Kaydedilemedi.");
+      }
+    } catch { setCatError("Bağlantı hatası."); }
+    finally { setCatSaving(false); }
   }
 
   async function addItem(e: React.FormEvent) {
@@ -237,8 +265,39 @@ export function CatalogDetailClient({
         </div>
       )}
       <div className="bg-white border border-stone-200 rounded-xl p-5 mb-6">
-        <h1 className="text-xl font-bold text-stone-800">{catalogName}</h1>
-        {catalogDescription && <p className="text-stone-600 mt-1">{catalogDescription}</p>}
+        {editingCatalog ? (
+          <div className="space-y-3 mb-3">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Kategori adı</label>
+              <input type="text" value={catName} onChange={(e) => setCatName(e.target.value)}
+                className="w-full border border-stone-300 rounded-lg px-3 py-2" placeholder="Kategori adı" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Açıklama (opsiyonel)</label>
+              <textarea value={catDesc} onChange={(e) => setCatDesc(e.target.value)}
+                className="w-full border border-stone-300 rounded-lg px-3 py-2 min-h-[60px]" rows={2} placeholder="Kategori açıklaması" />
+            </div>
+            {catError && <p className="text-red-600 text-sm">{catError}</p>}
+            <div className="flex gap-2">
+              <button type="button" onClick={saveCatalogInfo} disabled={catSaving}
+                className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 disabled:opacity-50 text-sm font-medium">
+                {catSaving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
+              <button type="button" onClick={() => { setEditingCatalog(false); setCatName(catalogName); setCatDesc(catalogDescription || ""); setCatError(""); }}
+                className="text-stone-500 px-4 py-2 rounded-lg hover:bg-stone-100 text-sm">İptal</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div>
+              <h1 className="text-xl font-bold text-stone-800">{catName}</h1>
+              {catDesc && <p className="text-stone-600 mt-1">{catDesc}</p>}
+              {catSuccess && <p className="text-green-700 text-sm bg-green-50 px-3 py-2 rounded-lg mt-2">{catSuccess}</p>}
+            </div>
+            <button type="button" onClick={() => setEditingCatalog(true)}
+              className="text-amber-600 text-sm hover:underline shrink-0">Düzenle</button>
+          </div>
+        )}
         <div className="mt-3">
           <p className="text-sm font-medium text-stone-700 mb-2">Kategori resmi</p>
           {catalogImage ? (

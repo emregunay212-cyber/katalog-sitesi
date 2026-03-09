@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useCart } from "@/lib/useCart";
 
 type Item = {
   id: string;
@@ -28,21 +29,21 @@ type Props = {
   catalogs: Catalog[];
 };
 
-type CartItem = { id: string; name: string; price: number; quantity: number };
-
 export function FirmaMusteri({ firma, catalogs }: Props) {
   const pathname = usePathname();
   const router = useRouter();
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const {
+    cart, total, cartPriceBanner, showPriceWarning, priceChangeList,
+    addToCart, updateQuantity, removeFromCart, clearCart,
+    checkPricesBeforeOrder, confirmPriceWarning, applyCartPriceUpdate,
+  } = useCart(`/api/firma/${firma.slug}/fiyatlar`);
+
   const [showCheckout, setShowCheckout] = useState(false);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [orderTotalAmount, setOrderTotalAmount] = useState<number>(0);
   const [orderId, setOrderId] = useState<string>("");
   const [error, setError] = useState("");
-  const [showPriceWarning, setShowPriceWarning] = useState(false);
-  const [priceChangeList, setPriceChangeList] = useState<{ name: string; oldPrice: number; newPrice: number }[]>([]);
-  const [cartPriceBanner, setCartPriceBanner] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ role?: string } | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
@@ -89,94 +90,13 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
       .catch(() => {});
   }, [showCheckout]);
 
-  const checkCartPrices = useCallback(async () => {
-    if (cart.length === 0) return;
-    const ids = cart.map((c) => c.id).join(",");
-    const res = await fetch(`/api/firma/${firma.slug}/fiyatlar?ids=${encodeURIComponent(ids)}`);
-    const data = await res.json();
-    if (!res.ok || !data.prices) return;
-    const hasChange = cart.some((c) => {
-      const p = data.prices[c.id];
-      return p !== undefined && p !== c.price;
-    });
-    setCartPriceBanner(!!hasChange);
-  }, [cart, firma.slug]);
-
-  useEffect(() => {
-    if (cart.length === 0) {
-      setCartPriceBanner(false);
-      return;
-    }
-    checkCartPrices();
-    const t = setInterval(checkCartPrices, 45000);
-    const onFocus = () => checkCartPrices();
-    window.addEventListener("focus", onFocus);
-    return () => {
-      clearInterval(t);
-      window.removeEventListener("focus", onFocus);
-    };
-  }, [cart.length, firma.slug, checkCartPrices]);
-
-  function addToCart(item: Item, qty: number = 1) {
-    const existing = cart.find((c) => c.id === item.id);
-    if (existing) {
-      setCart((prev) =>
-        prev.map((c) =>
-          c.id === item.id ? { ...c, quantity: c.quantity + qty } : c
-        )
-      );
-    } else {
-      setCart((prev) => [...prev, { ...item, quantity: qty }]);
-    }
-  }
-
-  function updateQuantity(itemId: string, delta: number) {
-    setCart((prev) => {
-      const next = prev.map((c) =>
-        c.id === itemId ? { ...c, quantity: Math.max(0, c.quantity + delta) } : c
-      );
-      return next.filter((c) => c.quantity > 0);
-    });
-  }
-
-  function removeFromCart(itemId: string) {
-    setCart((prev) => prev.filter((c) => c.id !== itemId));
-  }
-
-  const total = cart.reduce((s, c) => s + c.price * c.quantity, 0);
-
   async function onSiparisVerClick() {
-    if (cart.length === 0) return;
-    const ids = cart.map((c) => c.id).join(",");
-    const res = await fetch(`/api/firma/${firma.slug}/fiyatlar?ids=${encodeURIComponent(ids)}`);
-    const data = await res.json();
-    if (!res.ok || !data.prices) {
-      setShowCheckout(true);
-      return;
-    }
-    const changes: { name: string; oldPrice: number; newPrice: number }[] = [];
-    let hasChange = false;
-    setCart((prev) =>
-      prev.map((c) => {
-        const newPrice = data.prices[c.id];
-        if (newPrice !== undefined && newPrice !== c.price) {
-          hasChange = true;
-          changes.push({ name: c.name, oldPrice: c.price, newPrice });
-          return { ...c, price: newPrice };
-        }
-        return c;
-      })
-    );
-    if (hasChange && changes.length > 0) {
-      setPriceChangeList(changes);
-      setShowPriceWarning(true);
-    } else {
-      setShowCheckout(true);
-    }
+    const canProceed = await checkPricesBeforeOrder();
+    if (canProceed) setShowCheckout(true);
   }
 
-  function confirmPriceWarning() {
-    setShowPriceWarning(false);
+  function onConfirmPriceWarning() {
+    confirmPriceWarning();
     setShowCheckout(true);
   }
 
@@ -206,7 +126,7 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
       setOrderTotalAmount(total);
       if (data.order?.id) setOrderId(data.order.id);
       setSuccess(true);
-      setCart([]);
+      clearCart();
       setShowCheckout(false);
     } catch {
       setError("Bağlantı hatası.");
@@ -247,21 +167,6 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
         </div>
       </div>
     );
-  }
-
-  async function applyCartPriceUpdate() {
-    if (cart.length === 0) return;
-    const ids = cart.map((c) => c.id).join(",");
-    const res = await fetch(`/api/firma/${firma.slug}/fiyatlar?ids=${encodeURIComponent(ids)}`);
-    const data = await res.json();
-    if (!res.ok || !data.prices) return;
-    setCart((prev) =>
-      prev.map((c) => {
-        const newPrice = data.prices[c.id];
-        return newPrice !== undefined ? { ...c, price: newPrice } : c;
-      })
-    );
-    setCartPriceBanner(false);
   }
 
   return (
@@ -495,14 +400,14 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setShowPriceWarning(false)}
+                onClick={confirmPriceWarning}
                 className="flex-1 border border-stone-300 py-2 rounded-lg hover:bg-stone-50"
               >
                 İptal
               </button>
               <button
                 type="button"
-                onClick={confirmPriceWarning}
+                onClick={onConfirmPriceWarning}
                 className="flex-1 bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-600"
               >
                 Kabul ediyorum, devam et

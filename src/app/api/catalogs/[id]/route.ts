@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/apiAuth";
 import { prisma } from "@/lib/db";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
   const { id } = await params;
   const catalog = await prisma.catalog.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: auth.user.id },
     include: { items: { orderBy: { orderIndex: "asc" } } },
   });
   if (!catalog) {
@@ -25,13 +23,11 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
   const { id } = await params;
   const catalog = await prisma.catalog.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: auth.user.id },
   });
   if (!catalog) {
     return NextResponse.json({ error: "Katalog bulunamadı." }, { status: 404 });
@@ -52,13 +48,11 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
   const { id } = await params;
   const catalog = await prisma.catalog.findFirst({
-    where: { id, userId: user.id },
+    where: { id, userId: auth.user.id },
   });
   if (!catalog) {
     return NextResponse.json({ error: "Katalog bulunamadı." }, { status: 404 });

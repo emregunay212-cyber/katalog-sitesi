@@ -28,7 +28,13 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export async function createSession(user: SessionUser): Promise<string> {
-  const token = await new SignJWT({ userId: user.id, email: user.email, name: user.name })
+  const token = await new SignJWT({
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    slug: user.slug,
+    role: user.role,
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
     .sign(SECRET);
@@ -45,6 +51,8 @@ export async function getSession(): Promise<SessionUser | null> {
       id: payload.userId as string,
       email: payload.email as string,
       name: payload.name as string,
+      slug: (payload.slug as string) || undefined,
+      role: (payload.role as string) || undefined,
     };
   } catch {
     return null;

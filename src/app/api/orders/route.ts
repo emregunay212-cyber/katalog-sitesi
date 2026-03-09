@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/apiAuth";
 import { prisma } from "@/lib/db";
 
 // Firmanın tüm siparişleri (kategorili kalem bilgisiyle)
 export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
+  const user = auth.user;
   const orders = await prisma.order.findMany({
     where: { userId: user.id },
     include: {

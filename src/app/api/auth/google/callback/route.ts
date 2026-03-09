@@ -84,11 +84,13 @@ export async function GET(request: Request) {
     });
   }
 
-  const u = user as { id: string; email: string; name: string; role?: string };
+  const u = user as { id: string; email: string; name: string; slug: string; role?: string };
   const token = await createSession({
     id: u.id,
     email: u.email,
     name: u.name,
+    slug: u.slug,
+    role: u.role,
   });
   await setSessionCookie(token);
 

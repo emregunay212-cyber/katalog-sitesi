@@ -19,10 +19,13 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+    const u = user as { id: string; email: string; name: string; slug: string; role?: string };
     const token = await createSession({
-      id: user.id,
-      email: user.email,
-      name: user.name,
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      slug: u.slug,
+      role: u.role,
     });
     await setSessionCookie(token);
     return NextResponse.json({

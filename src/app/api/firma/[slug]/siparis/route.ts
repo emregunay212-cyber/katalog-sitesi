@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { createOrder } from "@/lib/order";
 
 // Müşteri sipariş verir (firma slug ile; sipariş firmaya düşer, kalemlerde kategori belli)
 export async function POST(
@@ -20,101 +21,23 @@ export async function POST(
       return NextResponse.json({ error: "Firma bulunamadı." }, { status: 404 });
     }
 
-    const allItemIds = new Set(
-      user.catalogs.flatMap((c) => c.items.map((i) => i.id))
-    );
-    const itemMap = new Map(
-      user.catalogs.flatMap((c) =>
-        c.items.map((i) => [i.id, { ...i, catalogId: c.id }])
-      )
+    const allItems = user.catalogs.flatMap((c) =>
+      c.items.map((i) => ({ id: i.id, price: i.price }))
     );
 
     const body = await request.json();
-    const {
-      customerName,
-      customerEmail,
-      customerPhone,
-      customerCompany,
-      customerAddress,
-      notes,
-      items: orderItems,
-    } = body;
-
-    if (!customerName?.trim() || !customerEmail?.trim() || !customerPhone?.trim()) {
-      return NextResponse.json(
-        { error: "Ad soyad, e-posta ve telefon gerekli." },
-        { status: 400 }
-      );
-    }
-
-    if (!Array.isArray(orderItems) || orderItems.length === 0) {
-      return NextResponse.json(
-        { error: "En az bir ürün seçmelisiniz." },
-        { status: 400 }
-      );
-    }
-
-    const validItems: { catalogItemId: string; quantity: number; unitPrice: number }[] = [];
-    for (const row of orderItems) {
-      const id = row.catalogItemId ?? row.id;
-      const qty = Math.max(1, parseInt(String(row.quantity), 10) || 1);
-      if (!allItemIds.has(id)) continue;
-      const item = itemMap.get(id);
-      if (item)
-        validItems.push({
-          catalogItemId: id,
-          quantity: qty,
-          unitPrice: item.price,
-        });
-    }
-
-    if (validItems.length === 0) {
-      return NextResponse.json(
-        { error: "Geçerli ürün seçin." },
-        { status: 400 }
-      );
-    }
-
-    const orderData = {
-      userId: user.id,
-      customerName: customerName.trim(),
-      customerEmail: customerEmail.trim(),
-      customerPhone: customerPhone.trim(),
-      customerCompany: customerCompany?.trim() || null,
-      customerAddress: customerAddress?.trim() || null,
-      notes: notes?.trim() || null,
-      status: "pending",
-      readByOwner: false,
-      ...(currentUser?.role === "musteri" && currentUser.id
-        ? { customerId: currentUser.id }
-        : {}),
-      items: {
-        create: validItems.map((i) => ({
-          catalogItemId: i.catalogItemId,
-          quantity: i.quantity,
-          unitPrice: i.unitPrice,
-        })),
-      },
-    };
-    const order = await prisma.order.create({
-      data: orderData as Parameters<typeof prisma.order.create>[0]["data"],
-      include: {
-        items: { include: { catalogItem: { include: { catalog: true } } } },
-      },
+    const result = await createOrder({
+      firmaUserId: user.id,
+      availableItems: allItems,
+      body,
+      currentUser,
     });
 
-    if (currentUser?.role === "musteri" && currentUser.id) {
-      await prisma.user.update({
-        where: { id: currentUser.id },
-        data: {
-          name: customerName.trim(),
-          ...(customerPhone.trim() && { phone: customerPhone.trim() }),
-          ...(customerAddress?.trim() && { address: customerAddress.trim() }),
-        } as { name: string },
-      });
+    if ("error" in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
-    return NextResponse.json({ order });
+    return NextResponse.json({ order: result.order });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "Sipariş oluşturulamadı." }, { status: 500 });

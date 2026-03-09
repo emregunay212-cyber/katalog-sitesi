@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { requireAuth } from "@/lib/apiAuth";
 import { prisma } from "@/lib/db";
 
 // Sipariş durumunu güncelle (pending, completed, cancelled)
@@ -7,10 +7,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return NextResponse.json({ error: "Giriş yapmalısınız." }, { status: 401 });
-  }
+  const auth = await requireAuth();
+  if (auth.error) return auth.error;
+  const user = auth.user;
   const { id } = await params;
   const order = await prisma.order.findFirst({
     where: { id },
@@ -23,12 +22,12 @@ export async function PATCH(
   if (!["pending", "completed", "cancelled"].includes(status)) {
     return NextResponse.json({ error: "Geçersiz durum." }, { status: 400 });
   }
-  // Tamamlandı yapılınca otomatik okundu işaretle (okunmamış sayısı düşsün)
+  // Tamamlandı veya iptal edilince otomatik okundu işaretle (okunmamış sayısı düşsün)
   const updated = await prisma.order.update({
     where: { id },
     data: {
       status,
-      ...(status === "completed" ? { readByOwner: true } : {}),
+      ...(status === "completed" || status === "cancelled" ? { readByOwner: true } : {}),
     },
   });
   return NextResponse.json({ order: updated });

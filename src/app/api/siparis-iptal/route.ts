@@ -14,6 +14,13 @@ export async function POST(request: Request) {
       );
     }
     const currentUser = await getCurrentUser();
+    // Firma kullanıcıları bu endpoint'i kullanamaz
+    if (currentUser?.role === "firma") {
+      return NextResponse.json(
+        { error: "Firma hesabıyla sipariş iptali yapılamaz." },
+        { status: 403 }
+      );
+    }
     const order = await prisma.order.findUnique({
       where: { id: orderId.trim() },
     });
@@ -23,10 +30,17 @@ export async function POST(request: Request) {
         { status: 404 }
       );
     }
-    const isOwnerBySession =
-      currentUser?.role === "musteri" &&
-      (order as { customerId?: string | null }).customerId === currentUser.id;
-    if (!isOwnerBySession) {
+    // Giriş yapmış müşteri: sadece kendi siparişini iptal edebilir
+    const orderCustomerId = (order as { customerId?: string | null }).customerId;
+    if (currentUser?.role === "musteri") {
+      if (orderCustomerId !== currentUser.id) {
+        return NextResponse.json(
+          { error: "Bu sipariş size ait değil." },
+          { status: 403 }
+        );
+      }
+    } else {
+      // Giriş yapmamış kullanıcı: orderId + email eşleşmesi gerekli
       if (!customerEmail?.trim()) {
         return NextResponse.json(
           { error: "Sipariş numarası ve e-posta gerekli." },

@@ -31,6 +31,7 @@ export async function PUT(
       description: body.description !== undefined ? body.description : item.description,
       price: body.price !== undefined ? Number(body.price) : item.price,
       imageUrl: body.imageUrl !== undefined ? body.imageUrl : item.imageUrl,
+      orderIndex: body.orderIndex !== undefined ? Number(body.orderIndex) : item.orderIndex,
     },
   });
   return NextResponse.json({ item: updated });

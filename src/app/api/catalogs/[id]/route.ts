@@ -39,6 +39,7 @@ export async function PUT(
       name: body.name ?? catalog.name,
       description: body.description !== undefined ? body.description : catalog.description,
       imageUrl: body.imageUrl !== undefined ? body.imageUrl : catalog.imageUrl,
+      isHidden: body.isHidden !== undefined ? Boolean(body.isHidden) : catalog.isHidden,
     },
   });
   return NextResponse.json({ catalog: updated });

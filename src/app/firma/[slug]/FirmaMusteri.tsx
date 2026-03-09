@@ -50,6 +50,7 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
   const ITEMS_PER_PAGE = 24;
   const [visibleByCatalog, setVisibleByCatalog] = useState<Record<string, number>>({});
   const [openCatalogId, setOpenCatalogId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -209,13 +210,28 @@ export function FirmaMusteri({ firma, catalogs }: Props) {
         </div>
       </header>
 
+      {/* Ürün arama */}
+      <div className="mb-4">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Ürün ara..."
+          className="w-full sm:max-w-xs border border-stone-300 rounded-lg px-3 py-2 text-sm"
+        />
+      </div>
       <div className="grid gap-4 sm:gap-8 lg:grid-cols-3 flex-1">
         <div className="lg:col-span-2 space-y-2">
           {catalogs.map((cat) => {
-            const isOpen = openCatalogId === cat.id;
+            const sq = searchQuery.trim().toLowerCase();
+            const filteredBySearch = sq
+              ? cat.items.filter((i) => i.name.toLowerCase().includes(sq) || (i.description || "").toLowerCase().includes(sq))
+              : cat.items;
+            if (sq && filteredBySearch.length === 0) return null;
+            const isOpen = sq ? true : openCatalogId === cat.id;
             const limit = visibleByCatalog[cat.id] ?? ITEMS_PER_PAGE;
-            const visibleItems = cat.items.slice(0, limit);
-            const hasMore = limit < cat.items.length;
+            const visibleItems = (sq ? filteredBySearch : cat.items).slice(0, limit);
+            const hasMore = limit < (sq ? filteredBySearch : cat.items).length;
             return (
               <section
                 key={cat.id}

@@ -37,6 +37,7 @@ model Catalog {
   slug        String        @unique
   description String?
   imageUrl    String?       // Kategori resmi
+  isHidden    Boolean       @default(false)  // Gizli katalog
   createdAt   DateTime      @default(now())
   items       CatalogItem[]
 }

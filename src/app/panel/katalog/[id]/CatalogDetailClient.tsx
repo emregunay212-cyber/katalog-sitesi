@@ -19,6 +19,7 @@ type Props = {
   catalogDescription: string | null;
   catalogImageUrl: string | null;
   initialItems: CatalogItem[];
+  initialIsHidden: boolean;
 };
 
 export function CatalogDetailClient({
@@ -27,6 +28,7 @@ export function CatalogDetailClient({
   catalogDescription,
   catalogImageUrl,
   initialItems,
+  initialIsHidden,
 }: Props) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
@@ -66,6 +68,9 @@ export function CatalogDetailClient({
   const [editImageUploading, setEditImageUploading] = useState(false);
   const editImageInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
+  const [movingId, setMovingId] = useState<string | null>(null);
+  const [isHidden, setIsHidden] = useState(initialIsHidden);
+  const [hiddenSaving, setHiddenSaving] = useState(false);
 
   async function handleFileUpload(file: File, onUrl: (url: string) => void) {
     setUploadError(null);
@@ -104,6 +109,23 @@ export function CatalogDetailClient({
       setUploadError(err instanceof Error ? err.message : "Bağlantı hatası. Tekrar deneyin.");
     } finally {
       setUploading(false);
+    }
+  }
+
+  async function toggleHidden() {
+    setHiddenSaving(true);
+    const newVal = !isHidden;
+    setIsHidden(newVal);
+    try {
+      await fetch(`/api/catalogs/${catalogId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isHidden: newVal }),
+      });
+    } catch {
+      setIsHidden(!newVal); // geri al
+    } finally {
+      setHiddenSaving(false);
     }
   }
 
@@ -196,6 +218,31 @@ export function CatalogDetailClient({
     setEditingId(null);
   }
 
+  async function moveItem(itemId: string, direction: "up" | "down") {
+    const idx = items.findIndex((i) => i.id === itemId);
+    if (direction === "up" && idx === 0) return;
+    if (direction === "down" && idx === items.length - 1) return;
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    const itemA = items[idx];
+    const itemB = items[swapIdx];
+    const newOrderA = itemB.orderIndex;
+    const newOrderB = itemA.orderIndex;
+    setMovingId(itemId);
+    setItems((prev) => {
+      const updated = prev.map((i) => {
+        if (i.id === itemA.id) return { ...i, orderIndex: newOrderA };
+        if (i.id === itemB.id) return { ...i, orderIndex: newOrderB };
+        return i;
+      });
+      return [...updated].sort((a, b) => a.orderIndex - b.orderIndex);
+    });
+    await Promise.all([
+      fetch(`/api/catalogs/${catalogId}/items/${itemA.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderIndex: newOrderA }) }),
+      fetch(`/api/catalogs/${catalogId}/items/${itemB.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderIndex: newOrderB }) }),
+    ]);
+    setMovingId(null);
+  }
+
   async function saveEdit() {
     if (!editingId || !editName.trim() || editPrice === "") return;
     setSaving(true);
@@ -270,7 +317,12 @@ export function CatalogDetailClient({
         </div>
       )}
       <div className="bg-white border border-stone-200 rounded-xl p-5 mb-6">
-        {editingCatalog ? (
+        {isHidden && (
+        <div className="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          Bu katalog müşteri sayfasında gizlidir. Göster butonuna basarak aktif edebilirsiniz.
+        </div>
+      )}
+      {editingCatalog ? (
           <div className="space-y-3 mb-3">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">Kategori adı</label>
@@ -299,8 +351,18 @@ export function CatalogDetailClient({
               {catDesc && <p className="text-stone-600 mt-1">{catDesc}</p>}
               {catSuccess && <p className="text-green-700 text-sm bg-green-50 px-3 py-2 rounded-lg mt-2">{catSuccess}</p>}
             </div>
-            <button type="button" onClick={() => setEditingCatalog(true)}
-              className="text-amber-600 text-sm hover:underline shrink-0">Düzenle</button>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setEditingCatalog(true)}
+                className="text-amber-600 text-sm hover:underline shrink-0">Düzenle</button>
+              <button
+                type="button"
+                onClick={toggleHidden}
+                disabled={hiddenSaving}
+                className={"text-sm hover:underline shrink-0 disabled:opacity-50 " + (isHidden ? "text-stone-400" : "text-stone-500")}
+              >
+                {isHidden ? "👁 Göster" : "🙈 Gizle"}
+              </button>
+            </div>
           </div>
         )}
         <div className="mt-3">
@@ -435,11 +497,25 @@ export function CatalogDetailClient({
                       {item.price.toFixed(2)} ₺
                     </span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveItem(item.id, "up")}
+                      disabled={movingId !== null || items.indexOf(item) === 0}
+                      className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 disabled:opacity-30 rounded hover:bg-stone-100"
+                      title="Yukarı taşı"
+                    >↑</button>
+                    <button
+                      type="button"
+                      onClick={() => moveItem(item.id, "down")}
+                      disabled={movingId !== null || items.indexOf(item) === items.length - 1}
+                      className="w-7 h-7 flex items-center justify-center text-stone-400 hover:text-stone-700 disabled:opacity-30 rounded hover:bg-stone-100"
+                      title="Aşağı taşı"
+                    >↓</button>
                     <button
                       type="button"
                       onClick={() => startEdit(item)}
-                      className="text-amber-600 text-sm hover:underline"
+                      className="text-amber-600 text-sm hover:underline ml-1"
                     >
                       Düzenle
                     </button>

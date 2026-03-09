@@ -43,6 +43,7 @@ export default async function CatalogDetailPage({
         catalogDescription={catalog.description}
         catalogImageUrl={catalog.imageUrl}
         initialItems={catalog.items}
+        initialIsHidden={catalog.isHidden}
       />
     </div>
   );

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 type User = {
   id: string;
@@ -10,6 +11,7 @@ type User = {
   slug?: string;
   role?: string;
   companyName?: string | null;
+  logoUrl?: string | null;
   phone?: string;
   address?: string;
 };
@@ -25,6 +27,9 @@ export default function PanelFirmaPage() {
   const [slug, setSlug] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/me")
@@ -38,10 +43,30 @@ export default function PanelFirmaPage() {
           setSlug(u.slug ?? "");
           setPhone(u.phone ?? "");
           setAddress(u.address ?? "");
+          setLogoUrl(u.logoUrl ?? null);
         }
       })
       .finally(() => setLoading(false));
   }, []);
+
+  async function handleLogoUpload(file: File) {
+    setLogoUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setLogoUrl(data.url);
+      } else {
+        setError(data.error || "Logo yüklenemedi.");
+      }
+    } catch {
+      setError("Bağlantı hatası.");
+    } finally {
+      setLogoUploading(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +83,7 @@ export default function PanelFirmaPage() {
           slug: slug.trim(),
           phone: phone.trim() || undefined,
           address: address.trim() || undefined,
+          logoUrl: logoUrl,
         }),
       });
       const data = await res.json();
@@ -103,6 +129,52 @@ export default function PanelFirmaPage() {
         {success && (
           <p className="text-green-700 text-sm bg-green-50 px-3 py-2 rounded-lg">{success}</p>
         )}
+        {/* Logo */}
+        <div>
+          <label className="block text-sm font-medium text-stone-700 mb-2">Firma logosu</label>
+          <div className="flex items-center gap-4">
+            <div className="w-20 h-20 rounded-xl border-2 border-stone-200 overflow-hidden bg-stone-50 flex items-center justify-center flex-shrink-0">
+              {logoUrl ? (
+                <div className="relative w-full h-full">
+                  <Image src={logoUrl} alt="Logo" fill className="object-cover" sizes="80px" />
+                </div>
+              ) : (
+                <span className="text-stone-400 text-xs text-center px-1">Logo yok</span>
+              )}
+            </div>
+            <div className="space-y-2">
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleLogoUpload(file);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={logoUploading}
+                className="block px-3 py-2 text-sm border border-stone-300 rounded-lg hover:border-amber-400 hover:bg-amber-50 disabled:opacity-50 transition"
+              >
+                {logoUploading ? "Yükleniyor…" : "Logo seç"}
+              </button>
+              {logoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setLogoUrl(null)}
+                  className="block text-xs text-red-500 hover:text-red-700"
+                >
+                  Logoyu kaldır
+                </button>
+              )}
+              <p className="text-xs text-stone-400">JPG, PNG veya WebP. Maks 4MB.</p>
+            </div>
+          </div>
+        </div>
+
         <div>
           <label htmlFor="firma-company" className="block text-sm font-medium text-stone-700 mb-1">Firma adı</label>
           <input

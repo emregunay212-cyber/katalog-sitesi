@@ -19,13 +19,13 @@ export async function PUT(request: Request) {
   if (user.role !== "firma") {
     return NextResponse.json({ error: "Sadece firma hesabı düzenlenebilir." }, { status: 403 });
   }
-  let body: { companyName?: string; name?: string; slug?: string; phone?: string; address?: string };
+  let body: { companyName?: string; name?: string; slug?: string; phone?: string; address?: string; logoUrl?: string | null };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Geçersiz istek." }, { status: 400 });
   }
-  const updates: { companyName?: string | null; name?: string; slug?: string; phone?: string | null; address?: string | null } = {};
+  const updates: { companyName?: string | null; name?: string; slug?: string; phone?: string | null; address?: string | null; logoUrl?: string | null } = {};
   if (body.companyName !== undefined) updates.companyName = body.companyName?.trim() || null;
   if (body.name !== undefined) {
     const n = body.name?.trim();
@@ -34,6 +34,7 @@ export async function PUT(request: Request) {
   }
   if (body.phone !== undefined) updates.phone = body.phone?.trim() || null;
   if (body.address !== undefined) updates.address = body.address?.trim() || null;
+  if (body.logoUrl !== undefined) updates.logoUrl = body.logoUrl || null;
   if (body.slug !== undefined) {
     const raw = body.slug?.trim();
     if (!raw) return NextResponse.json({ error: "Firma linki boş olamaz." }, { status: 400 });

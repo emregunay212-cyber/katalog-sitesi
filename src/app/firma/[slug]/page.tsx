@@ -14,6 +14,7 @@ export default async function FirmaPage({
     where: { slug },
     include: {
       catalogs: {
+        where: { isHidden: false },
         include: { items: { orderBy: { orderIndex: "asc" } } },
         orderBy: { createdAt: "asc" },
       },

@@ -14,15 +14,19 @@ type SearchResult = {
   catalog: { name: string; slug: string };
 };
 
+type CatalogOption = { id: string; name: string };
+
 export default function AraPage() {
   const searchParams = useSearchParams();
   const qParam = searchParams.get("q") ?? "";
   const [query, setQuery] = useState(qParam);
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [catalogs, setCatalogs] = useState<CatalogOption[]>([]);
+  const [selectedCatalog, setSelectedCatalog] = useState("");
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const doSearch = useCallback(async (term: string) => {
+  const doSearch = useCallback(async (term: string, catalogId: string) => {
     const t = term.trim();
     if (t.length < 2) {
       setResults([]);
@@ -32,9 +36,12 @@ export default function AraPage() {
     setLoading(true);
     setSearched(true);
     try {
-      const res = await fetch(`/api/ara?q=${encodeURIComponent(t)}`);
+      let url = `/api/ara?q=${encodeURIComponent(t)}`;
+      if (catalogId) url += `&catalog=${encodeURIComponent(catalogId)}`;
+      const res = await fetch(url);
       const data = await res.json();
       setResults(data.results ?? []);
+      if (data.catalogs) setCatalogs(data.catalogs);
     } catch {
       setResults([]);
     } finally {
@@ -42,15 +49,23 @@ export default function AraPage() {
     }
   }, []);
 
+  // Kategori listesini ilk yüklemede çek
+  useEffect(() => {
+    fetch("/api/ara?q=")
+      .then((r) => r.json())
+      .then((data) => { if (data.catalogs) setCatalogs(data.catalogs); })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     setQuery(qParam);
     if (qParam.trim().length >= 2) {
-      doSearch(qParam);
+      doSearch(qParam, selectedCatalog);
     } else {
       setResults([]);
       setSearched(false);
     }
-  }, [qParam, doSearch]);
+  }, [qParam, doSearch, selectedCatalog]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,7 +74,14 @@ export default function AraPage() {
     const url = new URL("/ara", window.location.origin);
     url.searchParams.set("q", term);
     window.history.pushState({}, "", url.toString());
-    doSearch(term);
+    doSearch(term, selectedCatalog);
+  }
+
+  function handleCatalogChange(catalogId: string) {
+    setSelectedCatalog(catalogId);
+    if (query.trim().length >= 2) {
+      doSearch(query, catalogId);
+    }
   }
 
   return (
@@ -69,7 +91,7 @@ export default function AraPage() {
         <p className="text-stone-600 text-sm mb-6">
           Tüm firmalar ve kategorilerde ürün adı veya açıklamasında geçen kelimeyle arayın.
         </p>
-        <form onSubmit={handleSubmit} className="mb-8">
+        <form onSubmit={handleSubmit} className="mb-4">
           <div className="flex gap-2">
             <input
               type="search"
@@ -88,6 +110,37 @@ export default function AraPage() {
             </button>
           </div>
         </form>
+
+        {/* Kategori Filtresi */}
+        {catalogs.length > 0 && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => handleCatalogChange("")}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
+                selectedCatalog === ""
+                  ? "bg-amber-500 text-white border-amber-500"
+                  : "bg-white text-stone-600 border-stone-300 hover:border-amber-400"
+              }`}
+            >
+              Tümü
+            </button>
+            {catalogs.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => handleCatalogChange(c.id)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition ${
+                  selectedCatalog === c.id
+                    ? "bg-amber-500 text-white border-amber-500"
+                    : "bg-white text-stone-600 border-stone-300 hover:border-amber-400"
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {loading && (
           <p className="text-stone-500 text-sm">Aranıyor…</p>

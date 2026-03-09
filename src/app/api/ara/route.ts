@@ -6,16 +6,30 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q")?.trim();
+  const catalogId = searchParams.get("catalog");
+
+  // Kategori listesini her zaman döndür
+  const catalogs = await prisma.catalog.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
   if (!q || q.length < 2) {
-    return NextResponse.json({ results: [] });
+    return NextResponse.json({ results: [], catalogs });
   }
+
+  const where: Record<string, unknown> = {
+    OR: [
+      { name: { contains: q, mode: "insensitive" } },
+      { description: { contains: q, mode: "insensitive" } },
+    ],
+  };
+  if (catalogId) {
+    where.catalogId = catalogId;
+  }
+
   const items = await prisma.catalogItem.findMany({
-    where: {
-      OR: [
-        { name: { contains: q, mode: "insensitive" } },
-        { description: { contains: q, mode: "insensitive" } },
-      ],
-    },
+    where,
     include: {
       catalog: { select: { name: true, slug: true } },
     },
@@ -30,5 +44,5 @@ export async function GET(request: Request) {
     imageUrl: item.imageUrl,
     catalog: item.catalog,
   }));
-  return NextResponse.json({ results });
+  return NextResponse.json({ results, catalogs });
 }

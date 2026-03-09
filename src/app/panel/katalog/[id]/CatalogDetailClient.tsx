@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -62,6 +62,9 @@ export function CatalogDetailClient({
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
+  const [editImageUploading, setEditImageUploading] = useState(false);
+  const editImageInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
 
   async function handleFileUpload(file: File, onUrl: (url: string) => void) {
@@ -186,6 +189,7 @@ export function CatalogDetailClient({
     setEditName(item.name);
     setEditPrice(String(item.price));
     setEditDesc(item.description || "");
+    setEditImageUrl(item.imageUrl);
   }
 
   function cancelEdit() {
@@ -203,6 +207,7 @@ export function CatalogDetailClient({
           name: editName.trim(),
           price: parseFloat(editPrice),
           description: editDesc.trim() || null,
+          imageUrl: editImageUrl,
         }),
       });
       const data = await res.json();
@@ -355,22 +360,63 @@ export function CatalogDetailClient({
                       placeholder="Fiyat"
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={saveEdit}
-                      disabled={saving}
-                      className="text-amber-600 text-sm hover:underline disabled:opacity-50"
-                    >
-                      {saving ? "Kaydediliyor..." : "Kaydet"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={cancelEdit}
-                      className="text-stone-500 text-sm hover:underline"
-                    >
-                      İptal
-                    </button>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      {editImageUrl ? (
+                        <div className="relative w-10 h-10 rounded overflow-hidden flex-shrink-0">
+                          <Image src={editImageUrl} alt="" fill className="object-cover" />
+                        </div>
+                      ) : null}
+                      <input
+                        ref={editImageInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif,image/*"
+                        className="hidden"
+                        disabled={editImageUploading}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!file) return;
+                          setEditImageUploading(true);
+                          await handleFileUpload(file, (url) => { setEditImageUrl(url); });
+                          setEditImageUploading(false);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => editImageInputRef.current?.click()}
+                        disabled={editImageUploading}
+                        className="text-xs text-amber-600 hover:underline disabled:opacity-50"
+                      >
+                        {editImageUploading ? "Yükleniyor..." : editImageUrl ? "Resmi değiştir" : "Resim ekle"}
+                      </button>
+                      {editImageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setEditImageUrl(null)}
+                          className="text-xs text-red-500 hover:underline"
+                        >
+                          Kaldır
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={saveEdit}
+                        disabled={saving || editImageUploading}
+                        className="text-amber-600 text-sm hover:underline disabled:opacity-50"
+                      >
+                        {saving ? "Kaydediliyor..." : "Kaydet"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        className="text-stone-500 text-sm hover:underline"
+                      >
+                        İptal
+                      </button>
+                    </div>
                   </div>
                 </>
               ) : (

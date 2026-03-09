@@ -28,6 +28,9 @@ export default async function PanelLayout({
           <Link href="/panel/siparisler" className="text-sm text-stone-500 hover:text-stone-900">
             Siparişler
           </Link>
+          <Link href="/panel/hesap" className="text-sm text-stone-500 hover:text-stone-900">
+            Hesap ayarları
+          </Link>
           <form action={logout} className="ml-auto">
             <button type="submit" className="text-sm text-red-500 hover:text-red-700">
               Çıkış yap

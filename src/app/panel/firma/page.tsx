@@ -19,6 +19,7 @@ export default function PanelFirmaPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
@@ -45,6 +46,7 @@ export default function PanelFirmaPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setSaving(true);
     try {
       const res = await fetch("/api/me", {
@@ -63,8 +65,12 @@ export default function PanelFirmaPage() {
         setError(data.error || "Kaydedilemedi.");
         return;
       }
-      if (data.user) setUser(data.user);
-      setError("");
+      if (data.user) {
+        setUser(data.user);
+        setSlug(data.user.slug ?? slug);
+      }
+      setSuccess("Firma bilgileri başarıyla güncellendi.");
+      setTimeout(() => setSuccess(""), 4000);
     } catch {
       setError("Bağlantı hatası.");
     } finally {
@@ -93,6 +99,9 @@ export default function PanelFirmaPage() {
       <form onSubmit={handleSubmit} className="bg-white border border-stone-200 rounded-xl p-5 max-w-lg space-y-4">
         {error && (
           <p className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+        )}
+        {success && (
+          <p className="text-green-700 text-sm bg-green-50 px-3 py-2 rounded-lg">{success}</p>
         )}
         <div>
           <label htmlFor="firma-company" className="block text-sm font-medium text-stone-700 mb-1">Firma adı</label>
